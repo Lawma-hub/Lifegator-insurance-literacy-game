@@ -853,6 +853,7 @@
                 if (isFirebaseActive) {
                     sysStatus.innerText = "多人連線大廳就緒";
                     generateHostRoom();
+                    document.getElementById('hostControlPanel').classList.remove('hidden');
                 } else {
                     sysStatus.innerText = "單機 Demo 伺服器 (Firebase未配)";
                     setupLocalDemoHost();
