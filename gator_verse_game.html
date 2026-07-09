@@ -1,0 +1,1788 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gator-VERSE: 青春大學生健康求生戰 v6.0</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Font Inter & Custom Chinese Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Tone.js for game retro sounds -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <!-- QRious QR Code Local Generator (Direct Canvas rendering bypasses all CSP image blocks) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+    <!-- Firebase JS SDK (v8 Compat for single file ease of use) -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', 'Noto Sans TC', sans-serif;
+        }
+        /* Soft Neo-Brutalist Playful Shadows */
+        .neo-btn {
+            transition: all 0.2s ease;
+            box-shadow: 3px 3px 0px 0px #0F172A;
+            border: 2px solid #0F172A;
+        }
+        .neo-btn:active:not([disabled]) {
+            transform: translate(2px, 2px);
+            box-shadow: 1px 1px 0px 0px #0F172A;
+        }
+        .neo-btn[disabled] {
+            opacity: 0.5;
+            box-shadow: none;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .neo-card {
+            border: 3px solid #0F172A;
+            box-shadow: 6px 6px 0px 0px #0F172A;
+        }
+        .clean-shadow-green {
+            box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.15);
+            border: 2px solid rgba(16, 185, 129, 0.4);
+        }
+        .clean-shadow-red {
+            box-shadow: 0 10px 25px -5px rgba(239, 68, 68, 0.15);
+            border: 2px solid rgba(239, 68, 68, 0.4);
+        }
+        .clean-shadow-purple {
+            box-shadow: 0 10px 25px -5px rgba(139, 92, 246, 0.15);
+            border: 2px solid rgba(139, 92, 246, 0.4);
+        }
+        .positive-pulse-glow {
+            animation: positivePulse 1.8s infinite alternate;
+        }
+        @keyframes positivePulse {
+            from { box-shadow: 0 0 4px rgba(16, 185, 129, 0.2); }
+            to { box-shadow: 0 0 16px rgba(16, 185, 129, 0.5); }
+        }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f8fafc; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="bg-[#FDFBF7] text-slate-900 min-h-screen flex flex-col overflow-x-hidden">
+
+    <!-- MODE SELECTOR OVERLAY (Always visible at start to determine if Host/Player or Demo) -->
+    <div id="modeSelectorOverlay" class="fixed inset-0 bg-[#FDFBF7] z-[99] flex flex-col justify-center items-center p-6">
+        <div class="max-w-2xl w-full text-center space-y-8">
+            <div class="inline-block bg-[#E8F5E9] p-5 rounded-[28px] border-4 border-[#0F172A] shadow-[6px_6px_0px_0px_#0F172A]">
+                <i class="fa-solid fa-gamepad text-[#2E7D32] text-5xl animate-bounce"></i>
+            </div>
+            <div>
+                <h1 class="text-4xl font-black text-[#0F172A] tracking-tight">
+                    Gator-VERSE 實時大對抗 🥦
+                </h1>
+                <p class="text-slate-600 text-sm mt-3 font-bold tracking-wide">青春大學生健康求生戰 • 免登入實時互動系統 v6.0</p>
+            </div>
+            
+            <div class="bg-[#FFFDE7] border-3 border-[#0F172A] p-6 rounded-2xl text-left text-xs text-slate-800 space-y-3 leading-relaxed shadow-[4px_4px_0px_0px_#0F172A]">
+                <p class="font-black text-[#E65100] text-sm flex items-center gap-1.5">
+                    <i class="fa-solid fa-lightbulb text-lg"></i> 💡 運作說明與指南 (Quick Start)：
+                </p>
+                <p>1. <b>大螢幕投影模式 (Host) 📺：</b> 適合投影在 Workshop 大螢幕。一鍵生成 4 位數 PIN，即時演算全場真人的決策％、保單覆蓋度與死傷破產大數據！</p>
+                <p>2. <b>學生手機端 (Player) 📱：</b> 學生手機直接掃大螢幕本地 QR Code，輸入房號 PIN 與暱稱，<b>無須註冊直接開戰！</b></p>
+                <p>3. <b>單機模擬測試 (Demo) 🎮：</b> 測試首選！自動加載 20 個高智能 AI 大學生與你同屏跨端對戰，功能 100% 完整呈現！</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                <button onclick="selectAppMode('host')" class="bg-white border-3 border-[#0F172A] hover:bg-emerald-50 p-6 rounded-2xl flex flex-col items-center justify-center gap-3 transition shadow-[4px_4px_0px_0px_#0F172A] hover:translate-y-[-2px] group">
+                    <i class="fa-solid fa-desktop text-2xl text-slate-700 group-hover:text-emerald-600 transition"></i>
+                    <div>
+                        <span class="block font-black text-sm text-slate-800">大螢幕投影主機</span>
+                        <span class="text-[10px] text-slate-500 font-bold">適合課堂放映投影</span>
+                    </div>
+                </button>
+                <button onclick="selectAppMode('player')" class="bg-white border-3 border-[#0F172A] hover:bg-cyan-50 p-6 rounded-2xl flex flex-col items-center justify-center gap-3 transition shadow-[4px_4px_0px_0px_#0F172A] hover:translate-y-[-2px] group">
+                    <i class="fa-solid fa-mobile-screen text-2xl text-slate-700 group-hover:text-cyan-600 transition"></i>
+                    <div>
+                        <span class="block font-black text-sm text-slate-800">學生手機操作端</span>
+                        <span class="text-[10px] text-slate-500 font-bold">用手機連上大螢幕</span>
+                    </div>
+                </button>
+                <button onclick="selectAppMode('demo')" class="bg-[#2E7D32] hover:bg-[#1B5E20] text-white border-3 border-[#0F172A] p-6 rounded-2xl flex flex-col items-center justify-center gap-3 transition shadow-[4px_4px_0px_0px_#0F172A] hover:translate-y-[-2px] group">
+                    <i class="fa-solid fa-circle-play text-2xl text-white group-hover:scale-110 transition"></i>
+                    <div>
+                        <span class="block font-black text-sm">單機模擬測試</span>
+                        <span class="text-[10px] text-emerald-100 font-bold">自帶 20+ AI 對手</span>
+                    </div>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- HEADER BANNER -->
+    <header class="bg-white border-b-3 border-[#0F172A] py-4 px-6 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="bg-[#E8F5E9] border-2 border-[#0F172A] p-2 rounded-xl shadow-[2px_2px_0px_0px_#0F172A]">
+                    <i class="fa-solid fa-seedling text-[#2E7D32] text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-black tracking-wider text-[#0F172A]">
+                        Lifegator.net 🐊
+                    </h1>
+                    <p id="appModeBadge" class="text-xs text-slate-500 font-black tracking-widest uppercase">Gator-VERSE: 實時多人在線對抗 v6.0</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-4 text-xs font-bold bg-[#F4F4F0] border-2 border-[#0F172A] py-2 px-4 rounded-full shadow-[2px_2px_0px_0px_#0F172A]">
+                <span class="flex items-center gap-2 text-emerald-700">
+                    <span class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span id="systemStatusLabel">正在初始化...</span>
+                </span>
+                <button onclick="toggleMute()" id="muteBtn" class="text-slate-600 hover:text-[#0F172A] transition">
+                    <i class="fa-solid fa-volume-high text-sm"></i> 音效開啟
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-7xl w-full mx-auto p-4 lg:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+
+        <!-- ================== LEFT: PROJECTOR MAIN STAGE (HOST VIEW) ================== -->
+        <section id="hostViewContainer" class="lg:col-span-5 bg-white border-3 border-[#0F172A] rounded-[24px] p-5 flex flex-col justify-between shadow-[6px_6px_0px_0px_#0F172A] transition-all duration-500">
+            <div>
+                <!-- Stage Header -->
+                <div class="flex justify-between items-center border-b-2 border-slate-100 pb-3 mb-4">
+                    <div class="flex items-center gap-2">
+                        <span class="flex h-3 w-3 relative">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                        </span>
+                        <h2 class="text-xs font-black uppercase text-emerald-700 tracking-wider">大螢幕投影舞台 📺 (Main Stage)</h2>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs bg-[#FFFDE7] text-[#E65100] py-1 px-3 rounded-md font-black border-2 border-[#0F172A] shadow-[2px_2px_0px_0px_#0F172A]" id="roomPinDisplay">Room PIN: ----</span>
+                    </div>
+                </div>
+
+                <!-- LOBBY WAITING SCREEN -->
+                <div id="hostLobbyPanel" class="bg-[#FDFBF7] border-2 border-[#0F172A] rounded-2xl p-4 mb-4 text-center py-6 shadow-inner">
+                    <h3 class="text-xs font-black text-slate-500 uppercase tracking-widest mb-4">🎮 學生連線大廳 (Lobby)</h3>
+                    <div class="flex flex-col items-center justify-center gap-3 mb-4">
+                        <div id="hostQrCodeContainer" class="bg-white p-3 rounded-2xl border-3 border-[#0F172A] shadow-[4px_4px_0px_0px_#0F172A]">
+                            <!-- CSP-Safe Local HTML5 Canvas QR Code Generator -->
+                            <canvas id="qrCodeCanvas" class="w-32 h-32"></canvas>
+                        </div>
+                        <p class="text-xs text-slate-500 font-bold">掃描二維碼或在手機輸入上方房號 PIN 加入</p>
+                    </div>
+                    <div class="text-sm font-black text-[#2E7D32] mb-3" id="connectedCountText">已連接人數: 0 人</div>
+                    <div id="lobbyPlayersGrid" class="grid grid-cols-2 gap-2 text-xs text-slate-700 max-h-24 overflow-y-auto font-bold font-mono">
+                        <span class="text-slate-400 italic">正在等待玩家加入...</span>
+                    </div>
+                </div>
+
+                <!-- Leaderboard -->
+                <div id="hostLeaderboardPanel" class="bg-[#F4F4F0] border-2 border-[#0F172A] rounded-2xl p-4 mb-4 hidden">
+                    <h3 class="text-xs font-black text-slate-500 uppercase tracking-widest mb-3 flex justify-between">
+                        <span>🏆 全場 Wellness 實時排行榜</span>
+                        <span class="text-emerald-700">Top 4</span>
+                    </h3>
+                    <div id="leaderboardList" class="space-y-2.5"></div>
+                </div>
+            </div>
+
+            <!-- Fate Wheel Graphic Panel -->
+            <div class="my-4 bg-[#FDFBF7] border-2 border-[#0F172A] rounded-2xl p-4 flex flex-col items-center justify-center relative overflow-hidden h-40 shadow-inner">
+                <div class="absolute inset-0 bg-gradient-to-b from-transparent to-emerald-50/20 pointer-events-none"></div>
+                <div id="wheelGraphic" class="relative w-24 h-24 rounded-full border-4 border-[#0F172A] bg-white flex items-center justify-center transition-all duration-[3000ms] ease-out shadow-sm">
+                    <div class="absolute w-full h-0.5 bg-slate-200 rotate-0"></div>
+                    <div class="absolute w-full h-0.5 bg-slate-200 rotate-45"></div>
+                    <div class="absolute w-full h-0.5 bg-slate-200 rotate-90"></div>
+                    <div class="absolute w-full h-0.5 bg-slate-200 rotate-[135deg]"></div>
+                    <div class="w-8 h-8 rounded-full bg-white border-4 border-emerald-500 flex items-center justify-center z-10 shadow-md">
+                        <i class="fa-solid fa-dice text-emerald-500 text-xs animate-pulse"></i>
+                    </div>
+                </div>
+                <div class="absolute top-9 z-20 text-emerald-600 text-lg transform rotate-180">
+                    <i class="fa-solid fa-caret-up"></i>
+                </div>
+                <div id="wheelStatusText" class="mt-2 text-xs font-black tracking-widest text-slate-500">命運之輪就緒</div>
+            </div>
+
+            <!-- Real-time Aggregate Choice Statistics Panel -->
+            <div class="bg-[#FDFBF7] border-2 border-[#0F172A] rounded-2xl p-4 flex-grow flex flex-col min-h-[160px] max-h-[220px] shadow-inner">
+                <h3 class="text-xs font-black text-slate-500 uppercase tracking-widest mb-2.5 flex items-center justify-between">
+                    <span class="flex items-center gap-2">
+                        <i class="fa-solid fa-chart-column text-emerald-600"></i>
+                        <span>現場聯動與大數據分佈統計</span>
+                    </span>
+                    <span id="activeStageIndicator" class="text-[10px] text-slate-400 uppercase font-mono">Stage: Lobby</span>
+                </h3>
+                <div id="aggregatedStatsContainer" class="flex-grow flex flex-col justify-center space-y-3 font-mono text-xs text-slate-600">
+                    <div class="space-y-2 text-slate-500">
+                        <p class="text-[11px] leading-relaxed font-semibold"><i class="fa-solid fa-info-circle text-emerald-500 mr-1"></i>遊戲未開始。大螢幕將在各個階段即時演算<b>全場所有真人在線同學</b>的抉擇分配比例！</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================== RIGHT: MOBILE PHONE TERMINAL ================== -->
+        <section id="phoneViewContainer" class="lg:col-span-7 bg-white border-3 border-[#0F172A] rounded-[24px] p-6 flex flex-col justify-between relative shadow-[6px_6px_0px_0px_#0F172A] overflow-hidden">
+            <!-- Global Stage Timer Banner -->
+            <div id="phaseTimerContainer" class="hidden absolute top-0 left-0 w-full h-1.5 bg-slate-100">
+                <div id="phaseTimerBar" class="h-full bg-gradient-to-r from-emerald-500 to-teal-400 w-full transition-all duration-1000 ease-linear"></div>
+            </div>
+
+            <!-- STATE: USER SETUP SCREEN / CONNECTION SCREEN -->
+            <div id="setupScreen" class="flex-grow flex flex-col justify-center items-center py-12">
+                <div class="text-center max-w-md mx-auto">
+                    <div id="setupLogoIcon" class="inline-block bg-[#E8F5E9] text-[#2E7D32] border-3 border-[#0F172A] p-5 rounded-[24px] mb-6 shadow-[4px_4px_0px_0px_#0F172A]">
+                        <i class="fa-solid fa-graduation-cap text-5xl animate-bounce"></i>
+                    </div>
+                    <h2 id="setupScreenTitle" class="text-2xl font-black text-slate-850 mb-2">加入 Gator-VERSE 求生戰 🥦</h2>
+                    <p id="setupScreenDesc" class="text-slate-500 text-sm mb-8 leading-relaxed font-medium">
+                        畢業後 10 年即將迎來無數加班、生活衝擊和意外。請輸入大螢幕上的房號與你的暱稱，開始你的保險素養修煉。
+                    </p>
+                    
+                    <div class="space-y-4 mb-6 text-left">
+                        <!-- Room PIN Input -->
+                        <div id="pinInputContainer" class="bg-[#FDFBF7] p-4 rounded-2xl border-2 border-[#0F172A] shadow-[2px_2px_0px_0px_#0F172A]">
+                            <label class="block text-xs font-black uppercase tracking-widest text-slate-400 mb-2">大螢幕投影 4 位數 PIN</label>
+                            <input type="text" id="playerRoomPinInput" placeholder="例如: 1234" maxlength="4"
+                                   class="w-full bg-white border-2 border-[#0F172A] rounded-xl px-4 py-3 text-slate-800 text-base font-bold focus:outline-none focus:ring-2 focus:ring-emerald-150 transition text-center tracking-widest font-mono shadow-inner">
+                        </div>
+
+                        <div class="bg-[#FDFBF7] p-4 rounded-2xl border-2 border-[#0F172A] shadow-[2px_2px_0px_0px_#0F172A]">
+                            <label class="block text-xs font-black uppercase tracking-widest text-slate-400 mb-2">輸入你的學生暱稱</label>
+                            <input type="text" id="playerNameInput" value="爆肝戰士" maxlength="8"
+                                   class="w-full bg-white border-2 border-[#0F172A] rounded-xl px-4 py-3 text-slate-800 text-base font-bold focus:outline-none focus:ring-2 focus:ring-emerald-150 transition shadow-inner">
+                        </div>
+                    </div>
+
+                    <button onclick="joinOrStartGame()" id="setupMainActionBtn"
+                            class="w-full neo-btn bg-gradient-to-r from-emerald-400 to-teal-500 text-white font-black py-4 px-8 rounded-xl text-lg">
+                        進入戰局 <i class="fa-solid fa-arrow-right ml-2"></i>
+                    </button>
+                    
+                    <!-- Host controller panels -->
+                    <div id="hostControlPanel" class="mt-4 hidden p-3.5 bg-[#FFFDE7] border-2 border-[#0F172A] rounded-2xl text-left shadow-inner">
+                        <span class="block text-[10px] font-black text-amber-700 uppercase tracking-widest mb-2"><i class="fa-solid fa-gears mr-1"></i> 主機房主控盤 (Host Controller)</span>
+                        <p class="text-[11px] text-slate-600 leading-snug mb-3 font-bold">你目前在大螢幕主機模式。當所有同學都完成連線進入大廳後，請點擊下方開始遊戲控制全場：</p>
+                        <button onclick="hostStartGame()" class="w-full neo-btn bg-[#2E7D32] hover:bg-[#1B5E20] text-white text-xs font-black uppercase py-2.5 px-4 rounded-lg transition shadow-md">
+                            <i class="fa-solid fa-play mr-1"></i> 全場同步開始遊戲
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- STATE: MAIN ACTIVE GAMEPLAY SCREEN -->
+            <div id="gameplayScreen" class="hidden flex-grow flex flex-col justify-between">
+                <!-- Active Dashboard -->
+                <div class="grid grid-cols-3 gap-3 mb-6 bg-[#FDFBF7] p-4 rounded-2xl border-2 border-[#0F172A] shadow-inner">
+                    <!-- Money Card -->
+                    <div class="text-center border-r-2 border-slate-200/80">
+                        <span class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
+                            <i class="fa-solid fa-wallet text-amber-500 mr-1"></i> 我的現金
+                        </span>
+                        <span id="playerMoneyText" class="text-lg font-black text-slate-800">$10,000</span>
+                    </div>
+                    <!-- Health Card -->
+                    <div class="text-center border-r-2 border-slate-200/80 px-2">
+                        <span class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
+                            <i class="fa-solid fa-heart text-emerald-500 mr-1"></i> 健康值
+                        </span>
+                        <div class="flex items-center justify-center gap-1.5">
+                            <span id="playerHealthText" class="text-lg font-black text-emerald-600">100%</span>
+                        </div>
+                    </div>
+                    <!-- Energy Card -->
+                    <div class="text-center px-2">
+                        <span class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
+                            <i class="fa-solid fa-bolt text-sky-500 mr-1"></i> 精力值
+                        </span>
+                        <div class="flex items-center justify-center gap-1.5">
+                            <span id="playerEnergyText" class="text-lg font-black text-sky-600">100%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SCREEN STATE 1: DECISION (STAGE A) -->
+                <div id="phaseDecision" class="hidden flex-grow flex flex-col justify-between">
+                    <div>
+                        <div class="mb-4 flex justify-between items-center">
+                            <span class="text-xs bg-[#E8F5E9] text-[#2E7D32] border-2 border-[#0F172A] py-1 px-3 rounded-full font-black">
+                                階段 A：投資自己 ⏰（限時 20 秒）
+                            </span>
+                            <span id="roundIndicator" class="text-xs text-slate-500 font-mono font-black">回合：1 / 5</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <h3 id="roundTitleText" class="text-lg font-black text-slate-800">第 1-2 年：剛入社會的迷茫</h3>
+                            <span id="decisionTimerText" class="text-xs font-black text-emerald-600">20s</span>
+                        </div>
+                        <p class="text-slate-500 text-xs mt-1 mb-4 font-bold">請分配精力，超時未揀將直接變成<b>「躺平 Mode」收入$0</b>：</p>
+
+                        <!-- 3 Choices Cards -->
+                        <div class="space-y-3.5">
+                            <!-- Choice A -->
+                            <button onclick="selectOption('slave')" id="optSlaveBtn"
+                                    class="w-full text-left bg-white hover:bg-slate-50 border-2 border-[#0F172A] hover:translate-y-[-2px] transition p-4 rounded-2xl flex items-start gap-4 transition group shadow-[3px_3px_0px_0px_#0F172A]">
+                                <div class="bg-amber-50 text-amber-600 border-2 border-[#0F172A] p-3 rounded-xl group-hover:scale-105 transition shadow-[2px_2px_0px_0px_#0F172A]">
+                                    <i class="fa-solid fa-briefcase text-xl"></i>
+                                </div>
+                                <div class="flex-grow">
+                                    <div class="flex justify-between items-center">
+                                        <span class="font-black text-slate-800">【終極奴工】通宵趕 Project 狂 O.T.</span>
+                                        <span class="text-xs font-black text-emerald-600">+$12,000</span>
+                                    </div>
+                                    <p class="text-slate-500 text-[11px] mt-1 font-semibold">極限出賣精力，換取最高薪金。但會面臨疲勞過度及較高風險！</p>
+                                    <div class="flex gap-2.5 mt-2.5 text-[10px] font-mono font-bold">
+                                        <span class="text-amber-600"><i class="fa-solid fa-heart mr-0.5"></i> 健康 -30%</span>
+                                        <span class="text-sky-600"><i class="fa-solid fa-bolt mr-0.5"></i> 精力 -50%</span>
+                                    </div>
+                                </div>
+                            </button>
+
+                            <!-- Choice B -->
+                            <button onclick="selectOption('chill')" id="optChillBtn"
+                                    class="w-full text-left bg-white hover:bg-slate-50 border-2 border-[#0F172A] hover:translate-y-[-2px] transition p-4 rounded-2xl flex items-start gap-4 transition group shadow-[3px_3px_0px_0px_#0F172A]">
+                                <div class="bg-sky-50 text-sky-600 border-2 border-[#0F172A] p-3 rounded-xl group-hover:scale-105 transition shadow-[2px_2px_0px_0px_#0F172A]">
+                                    <i class="fa-solid fa-plane text-xl"></i>
+                                </div>
+                                <div class="flex-grow">
+                                    <div class="flex justify-between items-center">
+                                        <span class="font-black text-slate-800">【Chill 爆】飛日本滑雪與大充電</span>
+                                        <span class="text-xs font-black text-rose-500">-$8,000</span>
+                                    </div>
+                                    <p class="text-slate-500 text-[11px] mt-1 font-semibold">重金投資身心靈充電！能量與健康大幅飆升，降低中招意外率。</p>
+                                    <div class="flex gap-2.5 mt-2.5 text-[10px] font-mono font-bold">
+                                        <span class="text-emerald-600"><i class="fa-solid fa-heart mr-0.5"></i> 健康 +15%</span>
+                                        <span class="text-sky-600"><i class="fa-solid fa-bolt mr-0.5"></i> 精力 +40%</span>
+                                    </div>
+                                </div>
+                            </button>
+
+                            <!-- Choice C -->
+                            <button onclick="selectOption('buddha')" id="optBuddhaBtn"
+                                    class="w-full text-left bg-white hover:bg-slate-50 border-2 border-[#0F172A] hover:translate-y-[-2px] transition p-4 rounded-2xl flex items-start gap-4 transition group shadow-[3px_3px_0px_0px_#0F172A]">
+                                <div class="bg-emerald-50 text-emerald-600 border-2 border-[#0F172A] p-3 rounded-xl group-hover:scale-105 transition shadow-[2px_2px_0px_0px_#0F172A]">
+                                    <i class="fa-solid fa-spa text-xl"></i>
+                                </div>
+                                <div class="flex-grow">
+                                    <div class="flex justify-between items-center">
+                                        <span class="font-black text-slate-800">【佛系人生】準時放工，摺 Com-room</span>
+                                        <span class="text-xs font-black text-emerald-600">+$3,000</span>
+                                    </div>
+                                    <p class="text-slate-500 text-[11px] mt-1 font-semibold">無欲無求，穩健過活。雖然加薪平緩，但能維持基礎健康狀態。</p>
+                                    <div class="flex gap-2.5 mt-2.5 text-[10px] font-mono font-bold">
+                                        <span class="text-emerald-600"><i class="fa-solid fa-heart mr-0.5"></i> 健康 +5%</span>
+                                        <span class="text-sky-600"><i class="fa-solid fa-bolt mr-0.5"></i> 精力 +10%</span>
+                                    </div>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Confirm CTA button -->
+                    <div class="mt-6 flex flex-col gap-2">
+                        <button id="confirmDecisionBtn" disabled onclick="confirmStageA()"
+                                class="w-full py-4 px-6 rounded-xl font-black uppercase tracking-wider text-sm transition neo-btn text-slate-400 bg-slate-100">
+                            確認投資生活方式
+                        </button>
+                        <button id="adminSkipDecisionBtn" onclick="hostProgressToStageB()" class="hidden w-full py-2 bg-slate-100 text-slate-600 text-xs font-black uppercase rounded-lg border border-slate-200">
+                            (Host 控制) 跳至保險市集 <i class="fa-solid fa-circle-chevron-right ml-1"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- SCREEN STATE 2: SHOP (STAGE B) -->
+                <div id="phaseShop" class="hidden flex-grow flex flex-col justify-between">
+                    <div>
+                        <div class="mb-4">
+                            <span class="text-xs bg-violet-50 text-violet-700 border-2 border-[#0F172A] py-1.5 px-3 rounded-full font-black">
+                                階段 B：Lifegator 保險市集 🛡️（限時 20 秒）
+                            </span>
+                            <div class="flex justify-between items-center mt-3">
+                                <h3 class="text-xl font-black text-slate-850">限時配置防禦保障卡</h3>
+                                <span id="shopTimerText" class="text-xs font-black text-emerald-600">20s</span>
+                            </div>
+                            <div class="flex justify-between items-center mt-1.5">
+                                <span class="text-xs text-amber-700 font-bold bg-[#FFFDE7] py-1 px-2.5 rounded border-2 border-[#0F172A] shadow-[2px_2px_0px_0px_#0F172A]">
+                                    年齡保費加乘：<span id="multiplierText">1.0x</span> (每回合遞增0.3x)
+                                </span>
+                            </div>
+                            <p class="text-[11px] text-slate-500 mt-2.5 leading-tight font-bold">
+                                <i class="fa-solid fa-circle-info text-emerald-600 mr-0.5"></i>
+                                <b>早買優勢：</b>連續續保享 <b class="text-[#2E7D32]">-30% 續保折扣</b>。若體能狀態欠佳才首次投保，將面臨 <b class="text-rose-600">+50% 高危附加費</b>！
+                            </p>
+                        </div>
+
+                        <!-- Alerts/Warnings Panel inside Marketplace -->
+                        <div id="riskStatusAlert" class="mb-4 p-3 bg-slate-50 border-2 border-[#0F172A] rounded-xl flex items-center gap-3 shadow-inner"></div>
+
+                        <!-- 3 Insurances cards -->
+                        <div class="space-y-3">
+                            <!-- Card 1: VHIS -->
+                            <div id="cardVHIS" class="bg-white border-2 border-[#0F172A] p-3 rounded-2xl flex justify-between items-center shadow-[3px_3px_0px_0px_#0F172A]">
+                                <div class="flex items-center gap-3">
+                                    <div class="bg-emerald-50 text-emerald-600 border-2 border-[#0F172A] p-2 rounded-xl">
+                                        <i class="fa-solid fa-hospital-user text-lg"></i>
+                                    </div>
+                                    <div>
+                                        <div class="flex items-center gap-1.5">
+                                            <span class="font-black text-slate-850 text-xs">自願醫保 VHIS</span>
+                                            <span id="vhisStatusBadge" class="text-[9px] bg-emerald-50 text-emerald-600 py-0.5 px-1.5 rounded font-black border border-emerald-100 shadow-sm">防流感/中毒</span>
+                                        </div>
+                                        <p class="text-slate-500 text-[10px] mt-0.5 font-bold">對沖流感、食物中毒。免自付開支，下輪<b>自動快速健康回血 +20%</b></p>
+                                    </div>
+                                </div>
+                                <button onclick="toggleInsurance('vhis')" id="buyVhisBtn"
+                                        class="py-2.5 px-3 rounded-xl text-xs font-black bg-emerald-600 text-white hover:bg-emerald-700 transition min-w-[90px] neo-btn">
+                                    $800 / 購
+                                </button>
+                            </div>
+
+                            <!-- Card 2: Accident -->
+                            <div id="cardAccident" class="bg-white border-2 border-[#0F172A] p-3 rounded-2xl flex justify-between items-center shadow-[3px_3px_0px_0px_#0F172A]">
+                                <div class="flex items-center gap-3">
+                                    <div class="bg-sky-50 text-sky-600 border-2 border-[#0F172A] p-2 rounded-xl">
+                                        <i class="fa-solid fa-crutch text-lg"></i>
+                                    </div>
+                                    <div>
+                                        <div class="flex items-center gap-1.5">
+                                            <span class="font-black text-slate-855 text-xs">高額意外險</span>
+                                            <span id="accidentStatusBadge" class="text-[9px] bg-sky-50 text-sky-600 py-0.5 px-1.5 rounded font-black border border-sky-100 shadow-sm">防摔倒/骨折</span>
+                                        </div>
+                                        <p class="text-slate-500 text-[10px] mt-0.5 font-bold">對沖意外摔倒、海外意外。免自付開支，下輪<b>精力自動回血 +20%</b></p>
+                                    </div>
+                                </div>
+                                <button onclick="toggleInsurance('accident')" id="buyAccidentBtn"
+                                        class="py-2.5 px-3 rounded-xl text-xs font-black bg-sky-500 text-white hover:bg-sky-600 transition min-w-[90px] neo-btn">
+                                    $400 / 購
+                                </button>
+                            </div>
+
+                            <!-- Card 3: CI -->
+                            <div id="cardCI" class="bg-white border-2 border-[#0F172A] p-3 rounded-2xl flex justify-between items-center shadow-[3px_3px_0px_0px_#0F172A]">
+                                <div class="flex items-center gap-3">
+                                    <div class="bg-violet-50 text-violet-600 border-2 border-[#0F172A] p-2 rounded-xl">
+                                        <i class="fa-solid fa-shield-halved text-lg"></i>
+                                    </div>
+                                    <div>
+                                        <div class="flex items-center gap-1.5">
+                                            <span class="font-black text-slate-855 text-xs">終身危疾險 (CI)</span>
+                                            <span id="ciStatusBadge" class="text-[9px] bg-violet-50 text-violet-600 py-0.5 px-1.5 rounded font-black border border-violet-100 shadow-sm">大病防護</span>
+                                        </div>
+                                        <p class="text-slate-500 text-[10px] mt-0.5 font-bold">對沖心肌炎、嚴重病變。中招時免除醫療負擔，更<b>額外發放 +$30,000</b></p>
+                                    </div>
+                                </div>
+                                <button onclick="toggleInsurance('ci')" id="buyCiBtn"
+                                        class="py-2.5 px-3 rounded-xl text-xs font-black bg-violet-600 text-white hover:bg-violet-700 transition min-w-[90px] neo-btn">
+                                    $1,200 / 購
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 flex flex-col gap-2">
+                        <button onclick="confirmStageB()"
+                                class="w-full bg-gradient-to-r from-violet-500 to-indigo-600 text-white font-black py-4 px-6 rounded-xl text-sm uppercase tracking-wider neo-btn">
+                            配置完成，進入命運考驗 <i class="fa-solid fa-dice-six mr-1"></i>
+                        </button>
+                        <button id="adminSkipShopBtn" onclick="hostProgressToStageC()" class="hidden w-full py-2 bg-slate-100 text-slate-600 text-xs font-black uppercase rounded-lg border border-slate-200">
+                            (Host 控制) 跳至命運之輪 <i class="fa-solid fa-circle-chevron-right ml-1"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- SCREEN STATE 3: WHEEL ACTION (STAGE C) -->
+                <div id="phaseWheel" class="hidden flex-grow flex flex-col justify-between py-6">
+                    <div class="text-center max-w-sm mx-auto">
+                        <div class="inline-block bg-[#E8F5E9] text-[#2E7D32] border-3 border-[#0F172A] p-5 rounded-[24px] mb-6 relative shadow-[4px_4px_0px_0px_#0F172A]">
+                            <i id="warningLightIcon" class="fa-solid fa-umbrella text-5xl"></i>
+                        </div>
+                        <h3 class="text-2xl font-black text-slate-800 mb-2">等待命運之輪引爆 🎯</h3>
+                        <p class="text-slate-500 text-sm leading-relaxed mb-6 font-bold">
+                            這一回合的風險事件即將席捲全場。你的個人數值決定了健康威脅與意外發生機率！
+                        </p>
+
+                        <!-- Pre-Spin Risk Probability Readouts -->
+                        <div class="bg-[#FDFBF7] border-2 border-[#0F172A] p-4 rounded-2xl text-left space-y-2.5 mb-6 shadow-inner">
+                            <h4 class="text-xs font-black text-slate-500 uppercase tracking-widest border-b-2 border-slate-200 pb-2">本輪個人健康與意外威脅估算：</h4>
+                            <div class="flex justify-between items-center text-xs font-bold">
+                                <span class="text-slate-500">意外受傷機率：</span>
+                                <span id="accidentProbText" class="font-black text-sky-600">15%</span>
+                            </div>
+                            <div class="flex justify-between items-center text-xs font-bold">
+                                <span class="text-slate-500">健康威脅機率：</span>
+                                <span id="illnessProbText" class="font-black text-emerald-600">15%</span>
+                            </div>
+                        </div>
+
+                        <!-- Display active buffs or danger tags before spinning -->
+                        <div class="space-y-2 mb-8 text-left">
+                            <div class="bg-[#FDFBF7] border-2 border-[#0F172A] p-3.5 rounded-xl flex items-center justify-between shadow-[2px_2px_0px_0px_#0F172A]">
+                                <span class="text-xs text-slate-500 font-bold uppercase tracking-wider">已裝備防護卡：</span>
+                                <div id="wheelEquippedShields" class="flex gap-2"></div>
+                            </div>
+                        </div>
+
+                        <button onclick="spinWheel()" id="spinActionBtn"
+                                class="w-full bg-[#2E7D32] text-white font-black py-4 px-8 rounded-xl text-lg neo-btn">
+                            <i class="fa-solid fa-circle-play mr-2"></i> <span id="spinActionBtnLabel">引爆命運之輪</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- SCREEN STATE 4: RESOLUTION SHOWCASE (STAGE C/D RESULT) -->
+                <div id="phaseResolution" class="hidden flex-grow flex flex-col justify-between">
+                    <div>
+                        <div class="text-center mb-6">
+                            <span class="text-xs bg-slate-100 text-slate-600 py-1.5 px-4 rounded-full font-black uppercase tracking-wider border-2 border-[#0F172A]">命運宣告 📢</span>
+                            <h3 id="resolvedEventTitle" class="text-2xl font-black mt-3 text-slate-800">事件：健康普查週</h3>
+                        </div>
+
+                        <div class="space-y-4">
+                            <div id="resolvedMemeBox" class="p-4 rounded-2xl border-2 border-[#0F172A] text-center font-black text-sm shadow-[3px_3px_0px_0px_#0F172A]"></div>
+
+                            <!-- Stat changes box -->
+                            <div class="bg-[#FDFBF7] border-2 border-[#0F172A] p-4 rounded-2xl space-y-3 shadow-inner">
+                                <h4 class="text-xs font-black text-slate-500 uppercase tracking-widest border-b-2 border-slate-200 pb-2">本回合結算影響</h4>
+                                <div class="grid grid-cols-2 gap-4 font-bold">
+                                    <div class="flex items-center gap-2.5">
+                                        <i class="fa-solid fa-heart text-emerald-500"></i>
+                                        <div>
+                                            <span class="block text-[10px] text-slate-400 uppercase font-black">健康增減</span>
+                                            <span id="resolveHealthChange" class="text-sm font-black">--</span>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-2.5">
+                                        <i class="fa-solid fa-bolt text-sky-500"></i>
+                                        <div>
+                                            <span class="block text-[10px] text-slate-400 uppercase font-black">精力增減</span>
+                                            <span id="resolveEnergyChange" class="text-sm font-black">--</span>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-2.5">
+                                        <i class="fa-solid fa-money-bill-wave text-amber-500"></i>
+                                        <div>
+                                            <span class="block text-[10px] text-slate-400 uppercase font-black">資產開支</span>
+                                            <span id="resolveMoneyChange" class="text-sm font-black">--</span>
+                                        </div>
+                                    </div>
+                                    <div id="resolveHospitalCard" class="flex items-center gap-2.5 col-span-2 hidden bg-amber-50 p-3 rounded-lg border-2 border-[#E65100]">
+                                        <i class="fa-solid fa-hospital text-[#E65100] animate-pulse"></i>
+                                        <div class="text-xs text-amber-850 font-black">
+                                            健康警報：已啟動強制醫療修復！支出 $4,000，各回復 +15%
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="insuranceBuffSummary" class="bg-emerald-50 border-2 border-emerald-500 p-4 rounded-2xl shadow-[3px_3px_0px_0px_rgba(16,185,129,0.3)] hidden">
+                                <div class="flex items-center gap-2 text-emerald-700 mb-1">
+                                    <i class="fa-solid fa-wand-magic-sparkles text-sm"></i>
+                                    <span class="text-xs font-black uppercase tracking-wider">Lifegator 快速康復保障已激活</span>
+                                </div>
+                                <p class="text-xs text-slate-700 leading-relaxed font-bold">
+                                    因為你在本回合做對了健康保險決策。下回合開始時，你將自動獲得<b>各 +20% 的健康與精力快速康復</b>！
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 flex flex-col gap-2">
+                        <button onclick="advanceRound()" id="advanceBtn"
+                                class="w-full bg-gradient-to-r from-emerald-400 to-teal-500 text-white font-black py-4 px-6 rounded-xl text-sm uppercase tracking-wider neo-btn">
+                            <span id="advanceBtnText">邁向下一回合</span> <i class="fa-solid fa-arrow-right ml-1"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- STATE: GAME OVER / RESULTS VIEW -->
+            <div id="gameOverScreen" class="hidden flex-grow flex flex-col justify-between py-4">
+                <div class="overflow-y-auto max-h-[500px] pr-2 space-y-6">
+                    <div class="text-center">
+                        <div class="inline-block bg-emerald-50 text-[#2E7D32] border-2 border-[#0F172A] px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest mb-3">
+                            十年度青春健康報告已生成
+                        </div>
+                        <h2 class="text-2xl font-black text-slate-850 mb-1">
+                            <span id="recapPlayerName">健康青年</span> 的年度報告
+                        </h2>
+                        <p class="text-slate-500 text-xs font-black">這是你在 Gator-VERSE 的健康與財富規劃軌跡回顧</p>
+                    </div>
+
+                    <!-- Spotify wrapped style core cards -->
+                    <div class="bg-gradient-to-tr from-emerald-50 to-teal-100 border-3 border-[#0F172A] p-6 rounded-3xl relative overflow-hidden shadow-[6px_6px_0px_0px_#0F172A]">
+                        <div class="absolute -right-10 -bottom-10 opacity-10 text-9xl text-emerald-500">
+                            <i class="fa-solid fa-award"></i>
+                        </div>
+                        <span class="text-[10px] font-black text-emerald-700 uppercase tracking-widest block mb-2">Gator-VERSE 最終評級</span>
+                        <h3 id="recapScoreGrade" class="text-3xl font-black text-emerald-850">A+ Risk Master</h3>
+                        <p id="recapDescription" class="text-slate-700 text-sm leading-relaxed mt-3 font-bold"></p>
+                    </div>
+
+                    <!-- Stat breakdown grid -->
+                    <div class="grid grid-cols-2 gap-4 font-bold">
+                        <div class="bg-slate-50 border-2 border-[#0F172A] p-4 rounded-2xl shadow-[3px_3px_0px_0px_#0F172A]">
+                            <span class="block text-[10px] text-slate-400 uppercase tracking-wider font-black">最終 Wellness Score</span>
+                            <span id="recapScoreVal" class="text-2xl font-black text-slate-800">89 / 100</span>
+                        </div>
+                        <div class="bg-slate-50 border-2 border-[#0F172A] p-4 rounded-2xl shadow-[3px_3px_0px_0px_#0F172A]">
+                            <span class="block text-[10px] text-slate-400 uppercase tracking-wider font-black">強制醫療次數</span>
+                            <span id="recapHospitalVal" class="text-2xl font-black text-slate-800">0 次</span>
+                        </div>
+                        <div class="bg-slate-50 border-2 border-[#0F172A] p-4 rounded-2xl shadow-[3px_3px_0px_0px_#0F172A]">
+                            <span class="block text-[10px] text-slate-400 uppercase tracking-wider font-black">自費醫療開支</span>
+                            <span id="recapMedicalFeeVal" class="text-2xl font-black text-rose-500">$0</span>
+                        </div>
+                        <div class="bg-slate-50 border-2 border-[#0F172A] p-4 rounded-2xl shadow-[3px_3px_0px_0px_#0F172A]">
+                            <span class="block text-[10px] text-slate-400 uppercase tracking-wider font-black">獲得理賠總金額</span>
+                            <span id="recapPayoutVal" class="text-2xl font-black text-emerald-600">$0</span>
+                        </div>
+                    </div>
+
+                    <!-- O2O Marketing CTA -->
+                    <div class="bg-white border-2 border-[#0F172A] p-5 rounded-3xl relative overflow-hidden shadow-[4px_4px_0px_0px_#0F172A]">
+                        <h4 class="font-black text-slate-800 flex items-center gap-2 text-sm mb-2">
+                            <i class="fa-solid fa-share-nodes text-[#2E7D32]"></i>
+                            <span>一鍵分享領取免費 Wellness 獎賞 🎁</span>
+                        </h4>
+                        <p class="text-slate-500 text-xs leading-relaxed mb-4 font-bold">
+                            複製你的健康報告摘要，在 IG/Threads 分享，Tag @Lifegator，即可免費兌換健康能量飲品券！
+                        </p>
+                        <div class="bg-[#FDFBF7] p-3 rounded-xl border-2 border-slate-200 text-[10px] font-mono text-[#2E7D32] break-words mb-3 shadow-inner" id="wrappedCopyText"></div>
+                        <button onclick="copyToClipboard()"
+                                class="w-full neo-btn bg-emerald-600 text-white font-black py-2.5 px-4 rounded-xl text-xs">
+                            <i class="fa-solid fa-copy mr-1"></i> 複製分享代碼
+                        </button>
+                    </div>
+                </div>
+
+                <div class="mt-6">
+                    <button onclick="resetGame()"
+                            class="w-full neo-btn bg-[#F4F4F0] text-slate-800 font-black py-4 px-6 rounded-xl text-sm uppercase tracking-wider">
+                        再玩一次，健康逆襲 <i class="fa-solid fa-rotate-right ml-1"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- =========================================================
+         🚀 SINGLE-UNIT CORE CODE BLOCK (PREVENTS GLOBAL SCOPE CRASHES)
+         ========================================================= -->
+    <script>
+        
+        let isMuted = false;
+        let synth = null;
+        
+        let db = null;
+        let isFirebaseActive = false;
+        let isMultiplayerMode = false;
+        let localRole = 'demo'; // host, player, demo
+        let roomPin = '';
+        let myPlayerId = '';
+
+        // Global Configurations
+        const firebaseConfig = {
+            apiKey: "AIzaSyDuugMpGj-xMs4ljFE8z0gfFIaXAii78Rs",
+            authDomain: "insurance-game-3d291.firebaseapp.com",
+            projectId: "insurance-game-3d291",
+            storageBucket: "insurance-game-3d291.firebasestorage.app",
+            messagingSenderId: "10524022737",
+            appId: "1:10524022737:web:4e23b4a11d533cac1c72f0"
+        };
+
+        const AGE_MATRICES = {
+            1: { ageRange: "22-24 歲", title: "第 1-2 年：初入社會，新鮮迷茫 🥦", multiplier: 1.0, baseRisk: 15 },
+            2: { ageRange: "24-26 歲", title: "第 3-4 年：拼搏衝刺，精力考驗 💻", multiplier: 1.3, baseRisk: 20 },
+            3: { ageRange: "26-28 歲", title: "第 5-6 年：中流砥柱，健康抉擇 🚀", multiplier: 1.6, baseRisk: 25 },
+            4: { ageRange: "28-30 歲", title: "第 7-8 年：初級管理，失眠白髮 📈", multiplier: 1.9, baseRisk: 30 },
+            5: { ageRange: "30-32 歲", title: "第 9-10 年：三十而立，黃金平衡 🏆", multiplier: 2.2, baseRisk: 35 }
+        };
+
+        const BASE_PREMIUMS = { vhis: 800, accident: 400, ci: 1200 };
+
+        let peers = [
+            { id: 'peer1', name: "爆莊王 🔥", health: 100, energy: 100, money: 10000, has_vhis: false, has_accident: false, has_ci: false, score: 100, isDead: false, type: 'yolo', nextRoundBuffs: { health: 0, energy: 0 }, lastChoices: { option: 'slave', insurances: [] } },
+            { id: 'peer2', name: "GPA戰士 📚", health: 100, energy: 100, money: 10000, has_vhis: false, has_accident: false, has_ci: false, score: 100, isDead: false, type: 'balanced', nextRoundBuffs: { health: 0, energy: 0 }, lastChoices: { option: 'buddha', insurances: [] } },
+            { id: 'peer3', name: "Deadline魔人 💻", health: 100, energy: 100, money: 10000, has_vhis: false, has_accident: false, has_ci: false, score: 100, isDead: false, type: 'extreme', nextRoundBuffs: { health: 0, energy: 0 }, lastChoices: { option: 'slave', insurances: [] } },
+            { id: 'peer4', name: "實習狂 B 👔", health: 100, energy: 100, money: 10000, has_vhis: false, has_accident: false, has_ci: false, score: 100, isDead: false, type: 'extreme', nextRoundBuffs: { health: 0, energy: 0 }, lastChoices: { option: 'slave', insurances: [] } },
+            { id: 'peer5', name: "養生派 C 🛌", health: 100, energy: 100, money: 10000, has_vhis: false, has_accident: false, has_ci: false, score: 100, isDead: false, type: 'yolo', nextRoundBuffs: { health: 0, energy: 0 }, lastChoices: { option: 'buddha', insurances: [] } }
+        ];
+
+        let playerState = {
+            name: "健康青年", health: 100, energy: 100, money: 10000,
+            has_vhis: false, has_accident: false, has_ci: false, isDead: false, score: 100,
+            payoutCollected: 0, hospitalizedCount: 0, medicalFeesPaid: 0, currentLifeOption: null,
+            pendingInsurances: { vhis: false, accident: false, ci: false },
+            boughtLastRound: { vhis: false, accident: false, ci: false },
+            nextRoundBuffs: { health: 0, energy: 0 }
+        };
+
+        let currentRound = 1;
+        let activeEvent = null;
+        let timerInterval = null;
+        let countdownTimer = 20;
+
+        function initAudio() {
+            if (!synth) {
+                try {
+                    if (typeof Tone !== 'undefined') {
+                        synth = new Tone.Synth().toDestination();
+                        synth.volume.value = -12;
+                    }
+                } catch(e) {
+                    console.warn("Tone.js failed to initialize synth scope:", e);
+                }
+            }
+        }
+
+        function playClick() {
+            if (isMuted) return;
+            initAudio();
+            try {
+                if (typeof Tone !== 'undefined') Tone.start();
+                if (synth) synth.triggerAttackRelease("C5", "16n");
+            } catch(e){}
+        }
+
+        function playSuccess() {
+            if (isMuted) return;
+            initAudio();
+            try {
+                if (typeof Tone !== 'undefined') Tone.start();
+                const now = Tone.now();
+                if (synth) {
+                    synth.triggerAttackRelease("C4", "8n", now);
+                    synth.triggerAttackRelease("E4", "8n", now + 0.1);
+                    synth.triggerAttackRelease("G4", "8n", now + 0.2);
+                    synth.triggerAttackRelease("C5", "4n", now + 0.3);
+                }
+            } catch(e){}
+        }
+
+        function playFail() {
+            if (isMuted) return;
+            initAudio();
+            try {
+                if (typeof Tone !== 'undefined') Tone.start();
+                const now = Tone.now();
+                if (synth) {
+                    synth.triggerAttackRelease("G4", "8n", now);
+                    synth.triggerAttackRelease("E4", "8n", now + 0.15);
+                    synth.triggerAttackRelease("C4", "4n", now + 0.3);
+                }
+            } catch(e){}
+        }
+
+        function playWarning() {
+            if (isMuted) return;
+            initAudio();
+            try {
+                if (typeof Tone !== 'undefined') Tone.start();
+                const now = Tone.now();
+                if (synth) {
+                    synth.triggerAttackRelease("F2", "8n", now);
+                    synth.triggerAttackRelease("F2", "8n", now + 0.2);
+                }
+            } catch(e){}
+        }
+
+        function playExplode() {
+            if (isMuted) return;
+            initAudio();
+            try {
+                if (typeof Tone !== 'undefined') Tone.start();
+                const now = Tone.now();
+                if (synth) {
+                    synth.triggerAttackRelease("C3", "4n", now);
+                    synth.triggerAttackRelease("B2", "2n", now + 0.15);
+                }
+            } catch(e){}
+        }
+
+        function toggleMute() {
+            isMuted = !isMuted;
+            const btn = document.getElementById('muteBtn');
+            if (isMuted) {
+                btn.innerHTML = '<i class="fa-solid fa-volume-xmark text-sm"></i> 音效關閉';
+                btn.classList.add('text-rose-600');
+            } else {
+                btn.innerHTML = '<i class="fa-solid fa-volume-high text-sm"></i> 音效開啟';
+                btn.classList.remove('text-rose-600');
+            }
+        }
+
+        if (typeof firebase !== 'undefined' && firebaseConfig && firebaseConfig.apiKey) {
+            try {
+                if (!firebaseConfig.databaseURL && firebaseConfig.projectId) {
+                    firebaseConfig.databaseURL = `https://${firebaseConfig.projectId}-default-rtdb.firebaseio.com`;
+                }
+                firebase.initializeApp(firebaseConfig);
+                db = firebase.database();
+                isFirebaseActive = true;
+                console.log("Firebase 實時數據庫順利連線！", firebaseConfig.databaseURL);
+            } catch(e) {
+                console.warn("Firebase 初始化遭攔截或報錯。將自動無縫使用單機 Demo 模式：", e);
+            }
+        } else {
+            console.warn("Firebase SDK 未加載（原因可能是沙盒 CSP 隔離或無網）。系統已自動切換成 Demo 模式。");
+        }
+
+        function calculateWellnessScore(health, money, energy) {
+            if (health <= 0 || energy <= 0) return 0;
+            const moneyFactor = (money / 300) * 0.4;
+            return Math.max(0, Math.round((health * 0.4) + moneyFactor + (energy * 0.2)));
+        }
+
+        function selectAppMode(mode) {
+            localRole = mode;
+            document.getElementById('modeSelectorOverlay').classList.add('hidden');
+            playSuccess();
+
+            const containerHost = document.getElementById('hostViewContainer');
+            const containerPhone = document.getElementById('phoneViewContainer');
+            const setupTitle = document.getElementById('setupScreenTitle');
+            const setupDesc = document.getElementById('setupScreenDesc');
+            const pinContainer = document.getElementById('pinInputContainer');
+            const sysStatus = document.getElementById('systemStatusLabel');
+
+            if (mode === 'host') {
+                containerHost.className = "lg:col-span-12 bg-white border-3 border-[#0F172A] rounded-[24px] p-5 flex flex-col justify-between shadow-[6px_6px_0px_0px_#0F172A] transition-all duration-500";
+                containerPhone.className = "hidden";
+                document.getElementById('appModeBadge').innerText = "Gator-VERSE: 大螢幕主控系統 (Host Stage)";
+                
+                if (isFirebaseActive) {
+                    sysStatus.innerText = "多人連線大廳就緒";
+                    generateHostRoom();
+                } else {
+                    sysStatus.innerText = "單機 Demo 伺服器 (Firebase未配)";
+                    setupLocalDemoHost();
+                }
+            } 
+            else if (mode === 'player') {
+                containerHost.className = "hidden";
+                containerPhone.className = "lg:col-span-12 bg-white border-3 border-[#0F172A] rounded-[24px] p-6 flex flex-col justify-between shadow-[6px_6px_0px_0px_#0F172A] overflow-hidden";
+                document.getElementById('appModeBadge').innerText = "Gator-VERSE: 手機對抗終端 (Player)";
+                
+                setupTitle.innerText = "加入實時大螢幕對決";
+                setupDesc.innerText = "請輸入大螢幕上顯示的 4 位數 Room PIN 和你的暱稱即可秒速開戰！";
+                pinContainer.classList.remove('hidden');
+
+                if (isFirebaseActive) {
+                    sysStatus.innerText = "實時多人在線連線中";
+                } else {
+                    sysStatus.innerText = "本地網絡受限 (無Firebase)";
+                    alert("手機模式必須配置有效的 Firebase Config 才能與大螢幕進行連線！已為您自動切換至【單機模擬測試 Mode】。");
+                    selectAppMode('demo');
+                }
+            } 
+            else if (mode === 'demo') {
+                containerHost.className = "lg:col-span-5 bg-white border-3 border-[#0F172A] rounded-[24px] p-5 flex flex-col justify-between shadow-[6px_6px_0px_0px_#0F172A] transition-all duration-500";
+                containerPhone.className = "lg:col-span-7 bg-white border-3 border-[#0F172A] rounded-[24px] p-6 flex flex-col justify-between shadow-[6px_6px_0px_0px_#0F172A] overflow-hidden";
+                document.getElementById('appModeBadge').innerText = "Gator-VERSE: 混合演示 Mode (Split)";
+                
+                pinContainer.classList.add('hidden');
+                setupTitle.innerText = "啟動你的健康求生之旅 🥦";
+                sysStatus.innerText = "完美單機模擬演示中";
+
+                renderConnectedPeersCount(peers.length);
+                renderConnectedPeersLobbyList(peers);
+                renderLeaderboard();
+                document.getElementById('roomPinDisplay').innerText = "Room PIN: DEMO";
+                document.getElementById('hostQrCodeContainer').classList.add('hidden');
+                
+                document.getElementById('hostControlPanel').classList.remove('hidden');
+                document.getElementById('setupMainActionBtn').className = "hidden";
+            }
+        }
+
+        function generateHostRoom() {
+            roomPin = Math.floor(1000 + Math.random() * 9000).toString();
+            document.getElementById('roomPinDisplay').innerText = `Room PIN: ${roomPin}`;
+            isMultiplayerMode = true;
+
+            // Load Local CSP-Safe Canvas QR Generator (Direct Canvas Bypass)
+            if (typeof QRious !== 'undefined') {
+                const qrCanvas = document.getElementById('qrCodeCanvas');
+                if (qrCanvas) {
+                    new QRious({
+                        element: qrCanvas,
+                        value: window.location.href.split('?')[0] + '?pin=' + roomPin,
+                        size: 200,
+                        level: 'H'
+                    });
+                }
+            }
+
+            db.ref(`rooms/${roomPin}`).set({
+                gameState: { currentRound: 1, phase: 'lobby', activeEvent: null, timer: 20 },
+                players: {}
+            });
+
+            db.ref(`rooms/${roomPin}/players`).on('value', (snapshot) => {
+                const playersData = snapshot.val() || {};
+                const list = Object.keys(playersData).map(key => ({
+                    id: key, name: playersData[key].name, health: playersData[key].health,
+                    energy: playersData[key].energy, money: playersData[key].money,
+                    score: playersData[key].score, isDead: playersData[key].isDead,
+                    currentLifeOption: playersData[key].currentLifeOption,
+                    insurances: playersData[key].insurances || { vhis: false, accident: false, ci: false }
+                }));
+
+                renderConnectedPeersCount(list.length);
+                renderConnectedPeersLobbyList(list);
+                peers = list; 
+                renderLeaderboard();
+                updateAggregatedRealtimeStatsPanel();
+            });
+        }
+
+        function setupLocalDemoHost() {
+            document.getElementById('roomPinDisplay').innerText = "Room PIN: DEMO";
+            document.getElementById('hostQrCodeContainer').classList.add('hidden');
+            renderConnectedPeersCount(peers.length);
+            renderConnectedPeersLobbyList(peers);
+        }
+
+        function joinOrStartGame() {
+            playClick();
+            const pinVal = document.getElementById('playerRoomPinInput').value.trim();
+            const nameVal = document.getElementById('playerNameInput').value.trim() || '學生';
+
+            if (localRole === 'player') {
+                if (!pinVal) {
+                    alert("請先輸入大螢幕投影上的 4 位數 Room PIN！");
+                    return;
+                }
+                
+                db.ref(`rooms/${pinVal}`).once('value', (snapshot) => {
+                    if (!snapshot.exists()) {
+                        alert(`❌ 錯誤：找不到房號 ${pinVal}，請確認 PIN 是否正確！`);
+                        return;
+                    }
+
+                    roomPin = pinVal;
+                    playerState.name = nameVal;
+                    myPlayerId = 'player_' + Math.random().toString(36).substr(2, 9);
+                    isMultiplayerMode = true;
+
+                    db.ref(`rooms/${roomPin}/players/${myPlayerId}`).set({
+                        name: playerState.name, health: playerState.health, energy: playerState.energy,
+                        money: playerState.money, score: playerState.score, isDead: playerState.isDead,
+                        currentLifeOption: null, insurances: { vhis: false, accident: false, ci: false }
+                    });
+
+                    db.ref(`rooms/${roomPin}/players/${myPlayerId}`).onDisconnect().remove();
+
+                    db.ref(`rooms/${roomPin}/gameState`).on('value', (stateSnap) => {
+                        const state = stateSnap.val() || {};
+                        handleHostStateChange(state);
+                    });
+
+                    document.getElementById('setupScreen').classList.add('hidden');
+                    document.getElementById('gameplayScreen').classList.remove('hidden');
+                    document.getElementById('systemStatusLabel').innerText = `已連線 (PIN: ${roomPin})`;
+                });
+            }
+        }
+
+        function handleHostStateChange(state) {
+            currentRound = state.currentRound;
+            if (state.phase === 'lobby') {
+                document.getElementById('setupScreen').classList.remove('hidden');
+                document.getElementById('gameplayScreen').classList.add('hidden');
+            } else if (state.phase === 'decision') {
+                enterStageA();
+            } else if (state.phase === 'shop') {
+                enterStageB();
+            } else if (state.phase === 'wheel') {
+                enterStageC();
+            } else if (state.phase === 'resolution') {
+                activeEvent = state.activeEvent;
+                resolveStageC();
+            } else if (state.phase === 'gameover') {
+                triggerEndGame(true, 'survived');
+            }
+        }
+
+        function hostStartGame() {
+            playSuccess();
+            if (localRole === 'demo') {
+                document.getElementById('hostControlPanel').classList.add('hidden');
+                document.getElementById('hostLobbyPanel').classList.add('hidden');
+                document.getElementById('hostLeaderboardPanel').classList.remove('hidden');
+                document.getElementById('setupScreen').classList.add('hidden');
+                document.getElementById('gameplayScreen').classList.remove('hidden');
+                enterStageA();
+            } else if (localRole === 'host' && isFirebaseActive) {
+                db.ref(`rooms/${roomPin}/gameState`).update({ phase: 'decision', currentRound: 1 });
+                document.getElementById('hostLobbyPanel').classList.add('hidden');
+                document.getElementById('hostLeaderboardPanel').classList.remove('hidden');
+            }
+        }
+
+        function renderConnectedPeersCount(count) {
+            document.getElementById('connectedCountText').innerText = `已連接人數: ${count} 人`;
+        }
+
+        function renderConnectedPeersLobbyList(list) {
+            const container = document.getElementById('lobbyPlayersGrid');
+            container.innerHTML = "";
+            if (list.length === 0) {
+                container.innerHTML = `<span class="text-slate-400 italic">正在等待玩家加入...</span>`;
+                return;
+            }
+            list.forEach(item => {
+                container.innerHTML += `
+                    <div class="flex items-center gap-1.5 bg-[#E8F5E9] border-2 border-[#0F172A] p-1.5 px-3 rounded-lg text-[#2E7D32] font-black">
+                        <span class="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <span class="truncate">${item.name}</span>
+                    </div>`;
+            });
+        }
+
+        function renderLeaderboard() {
+            let list = [];
+            if (localRole === 'demo') {
+                list = [{ name: playerState.name, score: playerState.score, isDead: playerState.isDead, money: playerState.money, isPlayer: true }, ...peers];
+            } else {
+                list = peers.map(p => ({ name: p.name, score: p.score, isDead: p.isDead, money: p.money, isPlayer: p.id === myPlayerId }));
+            }
+
+            list.sort((a, b) => b.score - a.score);
+            const container = document.getElementById('leaderboardList');
+            container.innerHTML = "";
+
+            list.slice(0, 4).forEach((item, index) => {
+                let badge = index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : "🏅";
+                let rowClass = item.isPlayer ? "bg-[#E8F5E9] border-2 border-[#0F172A] font-black text-slate-800" : "bg-white border-2 border-[#0F172A]";
+                if (item.isDead) rowClass = "bg-rose-50 border-2 border-rose-200 opacity-60";
+
+                container.innerHTML += `
+                    <div class="flex justify-between items-center p-2.5 rounded-xl ${rowClass} transition duration-300 shadow-[2px_2px_0px_0px_#0F172A]">
+                        <div class="flex items-center gap-2.5">
+                            <span class="text-xs font-bold">${badge}</span>
+                            <span class="text-xs font-black ${item.isPlayer ? 'text-emerald-800' : 'text-slate-700'}">${item.name} ${item.isPlayer ? '(你)' : ''}</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="text-[10px] font-semibold text-slate-500">$${item.money.toLocaleString()}</span>
+                            <span class="text-xs font-mono font-black ${item.isDead ? 'text-rose-600 line-through' : 'text-slate-800'}">
+                                ${item.isDead ? '進入療養期' : item.score + ' pts'}
+                            </span>
+                        </div>
+                    </div>`;
+            });
+        }
+
+        function updateAggregatedRealtimeStatsPanel() {
+            const container = document.getElementById('aggregatedStatsContainer');
+            const stageIndicator = document.getElementById('activeStageIndicator');
+            
+            let allParticipants = localRole === 'demo' ? [playerState, ...peers] : peers;
+            const totalCount = allParticipants.length;
+            if (totalCount === 0) return;
+
+            let phase = 'lobby';
+            if (document.getElementById('phaseDecision') && !document.getElementById('phaseDecision').classList.contains('hidden')) phase = 'decision';
+            else if (document.getElementById('phaseShop') && !document.getElementById('phaseShop').classList.contains('hidden')) phase = 'shop';
+            else if (document.getElementById('phaseWheel') && !document.getElementById('phaseWheel').classList.contains('hidden')) phase = 'wheel';
+            else if (document.getElementById('phaseResolution') && !document.getElementById('phaseResolution').classList.contains('hidden')) phase = 'resolution';
+
+            stageIndicator.innerText = `Stage: ${phase.toUpperCase()}`;
+
+            if (phase === 'lobby') {
+                container.innerHTML = `<div class="space-y-2 text-slate-500"><p class="text-[11px] leading-relaxed font-semibold"><i class="fa-solid fa-info-circle text-emerald-500 mr-1"></i>遊戲大廳已開啟！等待 ${totalCount} 位同學準備好後開局！</p></div>`;
+            } 
+            else if (phase === 'decision') {
+                let slave = 0, chill = 0, buddha = 0;
+                allParticipants.forEach(p => {
+                    if (p.currentLifeOption === 'slave') slave++;
+                    else if (p.currentLifeOption === 'chill') chill++;
+                    else if (p.currentLifeOption === 'buddha') buddha++;
+                });
+
+                container.innerHTML = `
+                    <div class="space-y-2.5">
+                        <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1 flex justify-between">
+                            <span>📊 投資分配即時大數據：</span>
+                            <span class="text-[#2E7D32]">${slave + chill + buddha}/${totalCount} 提交</span>
+                        </div>
+                        <div class="space-y-2">
+                            <div>
+                                <div class="flex justify-between text-[11px] font-bold text-amber-600"><span>【終極奴工】</span><span>${slave}人 (${Math.round((slave/totalCount)*100)}%)</span></div>
+                                <div class="h-2 w-full bg-slate-100 rounded-full overflow-hidden mt-1"><div class="h-full bg-amber-500 transition-all duration-500" style="width: ${(slave/totalCount)*100}%"></div></div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-[11px] font-bold text-sky-600"><span>【Chill 爆】</span><span>${chill}人 (${Math.round((chill/totalCount)*100)}%)</span></div>
+                                <div class="h-2 w-full bg-slate-100 rounded-full overflow-hidden mt-1"><div class="h-full bg-sky-500 transition-all duration-500" style="width: ${(chill/totalCount)*100}%"></div></div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-[11px] font-bold text-emerald-600"><span>【佛系人生】</span><span>${buddha}人 (${Math.round((buddha/totalCount)*100)}%)</span></div>
+                                <div class="h-2 w-full bg-slate-100 rounded-full overflow-hidden mt-1"><div class="h-full bg-emerald-500 transition-all duration-500" style="width: ${(buddha/totalCount)*100}%"></div></div>
+                            </div>
+                        </div>
+                    </div>`;
+            } 
+            else if (phase === 'shop') {
+                let vhis = 0, accident = 0, ci = 0;
+                allParticipants.forEach(p => {
+                    const hasV = p.has_vhis || (p.insurances && p.insurances.vhis);
+                    const hasA = p.has_accident || (p.insurances && p.insurances.accident);
+                    const hasC = p.has_ci || (p.insurances && p.insurances.ci);
+                    if (hasV) vhis++;
+                    if (hasA) accident++;
+                    if (hasC) ci++;
+                });
+
+                container.innerHTML = `
+                    <div class="space-y-2">
+                        <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1">🛡️ 全場保險配置率：</div>
+                        <div class="grid grid-cols-3 gap-2">
+                            <div class="bg-white border-2 border-[#0F172A] p-2.5 rounded-xl text-center shadow-[2px_2px_0px_0px_#0F172A]">
+                                <span class="block text-[9px] text-emerald-600 font-bold">自願醫保</span>
+                                <span class="text-lg font-black">${Math.round((vhis/totalCount)*100)}%</span>
+                            </div>
+                            <div class="bg-white border-2 border-[#0F172A] p-2.5 rounded-xl text-center shadow-[2px_2px_0px_0px_#0F172A]">
+                                <span class="block text-[9px] text-sky-600 font-bold">意外險</span>
+                                <span class="text-lg font-black">${Math.round((accident/totalCount)*100)}%</span>
+                            </div>
+                            <div class="bg-white border-2 border-[#0F172A] p-2.5 rounded-xl text-center shadow-[2px_2px_0px_0px_#0F172A]">
+                                <span class="block text-[9px] text-violet-600 font-bold">終身危疾</span>
+                                <span class="text-lg font-black">${Math.round((ci/totalCount)*100)}%</span>
+                            </div>
+                        </div>
+                    </div>`;
+            } 
+            else if (phase === 'wheel') {
+                container.innerHTML = `<div class="space-y-2 text-slate-500"><p class="text-[11px] leading-relaxed font-semibold"><i class="fa-solid fa-hourglass-half text-emerald-500 animate-spin mr-1"></i> 命運之輪即將爆發！全體防禦卡已加載完畢！</p></div>`;
+            } 
+            else if (phase === 'resolution') {
+                let deadCount = 0;
+                allParticipants.forEach(p => { if (p.isDead) deadCount++; });
+                container.innerHTML = `
+                    <div class="space-y-2">
+                        <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1">🏥 身體極限超載及療養統計：</div>
+                        <div class="bg-white border-2 border-[#0F172A] p-3 rounded-xl flex items-center justify-between shadow-[2px_2px_0px_0px_#0F172A]">
+                            <div class="flex items-center gap-2"><i class="fa-solid fa-bed-pulse text-rose-500 text-lg animate-pulse"></i><span class="font-bold text-slate-700 text-xs">累計療養中人數</span></div>
+                            <span class="text-2xl font-black text-rose-600">${deadCount} / ${totalCount}</span>
+                        </div>
+                    </div>`;
+            }
+        }
+
+        function startPhaseTimer(seconds, onTimeoutCallback, barId, textId) {
+            clearInterval(timerInterval);
+            countdownTimer = seconds;
+            
+            const timerContainer = document.getElementById('phaseTimerContainer');
+            const timerBar = document.getElementById('phaseTimerBar');
+            const timerText = document.getElementById(textId);
+            
+            timerContainer.classList.remove('hidden');
+            timerBar.style.width = '100%';
+            timerText.innerText = `${countdownTimer}s`;
+
+            timerInterval = setInterval(() => {
+                countdownTimer--;
+                timerText.innerText = `${countdownTimer}s`;
+                timerBar.style.width = `${(countdownTimer / seconds) * 100}%`;
+
+                if (countdownTimer <= 5) {
+                    playWarning();
+                    timerText.className = "text-xs font-black text-rose-500 animate-pulse";
+                } else {
+                    timerText.className = "text-xs font-black text-emerald-600";
+                }
+
+                if (countdownTimer <= 0) {
+                    clearInterval(timerInterval);
+                    timerContainer.classList.add('hidden');
+                    onTimeoutCallback();
+                }
+            }, 1000);
+        }
+
+        function stopPhaseTimer() {
+            clearInterval(timerInterval);
+            document.getElementById('phaseTimerContainer').classList.add('hidden');
+        }
+
+        function enterStageA() {
+            playerState.money -= 3000; //生存開支扣除
+            
+            document.getElementById('phaseDecision').classList.remove('hidden');
+            document.getElementById('phaseShop').classList.add('hidden');
+            document.getElementById('phaseWheel').classList.add('hidden');
+            document.getElementById('phaseResolution').classList.add('hidden');
+
+            const roundInfo = AGE_MATRICES[currentRound];
+            document.getElementById('roundTitleText').innerHTML = `${roundInfo.title} <span class="text-slate-400 font-normal">(Age ${roundInfo.ageRange})</span>`;
+            document.getElementById('roundIndicator').innerText = `回合：${currentRound} / 5`;
+
+            document.getElementById('optSlaveBtn').className = "w-full text-left bg-white hover:bg-slate-50 border-2 border-[#0F172A] p-4 rounded-2xl flex items-start gap-4 transition group shadow-[3px_3px_0px_0px_#0F172A]";
+            document.getElementById('optChillBtn').className = "w-full text-left bg-white hover:bg-slate-50 border-2 border-[#0F172A] p-4 rounded-2xl flex items-start gap-4 transition group shadow-[3px_3px_0px_0px_#0F172A]";
+            document.getElementById('optBuddhaBtn').className = "w-full text-left bg-white hover:bg-slate-50 border-2 border-[#0F172A] p-4 rounded-2xl flex items-start gap-4 transition group shadow-[3px_3px_0px_0px_#0F172A]";
+
+            playerState.currentLifeOption = null;
+            const confirmBtn = document.getElementById('confirmDecisionBtn');
+            confirmBtn.disabled = true;
+            confirmBtn.className = "w-full py-4 px-6 rounded-xl font-black uppercase tracking-wider text-sm transition text-slate-400 bg-slate-100 cursor-not-allowed";
+
+            renderDashboard();
+            updateAggregatedRealtimeStatsPanel();
+            startPhaseTimer(20, handleStageATimeout, "phaseTimerBar", "decisionTimerText");
+
+            if (localRole === 'demo') {
+                document.getElementById('adminSkipDecisionBtn').classList.remove('hidden');
+            }
+        }
+
+        function handleStageATimeout() {
+            playerState.currentLifeOption = "timeout_buddha";
+            confirmStageA();
+        }
+
+        function selectOption(type) {
+            playClick();
+            document.getElementById('optSlaveBtn').className = "w-full text-left bg-white border-2 border-[#0F172A] p-4 rounded-2xl flex items-start gap-4 transition group shadow-[3px_3px_0px_0px_#0F172A]";
+            document.getElementById('optChillBtn').className = "w-full text-left bg-white border-2 border-[#0F172A] p-4 rounded-2xl flex items-start gap-4 transition group shadow-[3px_3px_0px_0px_#0F172A]";
+            document.getElementById('optBuddhaBtn').className = "w-full text-left bg-white border-2 border-[#0F172A] p-4 rounded-2xl flex items-start gap-4 transition group shadow-[3px_3px_0px_0px_#0F172A]";
+
+            if (type === 'slave') document.getElementById('optSlaveBtn').className = "w-full text-left bg-amber-50 border-2 border-amber-500 p-4 rounded-2xl flex items-start gap-4 transition shadow-md";
+            else if (type === 'chill') document.getElementById('optChillBtn').className = "w-full text-left bg-sky-50 border-2 border-sky-500 p-4 rounded-2xl flex items-start gap-4 transition shadow-md";
+            else if (type === 'buddha') document.getElementById('optBuddhaBtn').className = "w-full text-left bg-emerald-50 border-2 border-emerald-500 p-4 rounded-2xl flex items-start gap-4 transition shadow-md";
+
+            playerState.currentLifeOption = type;
+            const confirmBtn = document.getElementById('confirmDecisionBtn');
+            confirmBtn.disabled = false;
+            confirmBtn.className = "w-full py-4 px-6 rounded-xl font-black uppercase tracking-wider text-sm transition text-white bg-gradient-to-r from-emerald-500 to-teal-500 shadow-lg shadow-emerald-100 cursor-pointer hover:from-emerald-600 hover:to-teal-600 transform active:scale-95";
+        }
+
+        function confirmStageA() {
+            stopPhaseTimer();
+            const opt = playerState.currentLifeOption;
+            
+            if (opt === 'slave') {
+                playerState.energy = Math.max(0, playerState.energy - 50);
+                playerState.health = Math.max(0, playerState.health - 30);
+                playerState.money += 12000;
+            } else if (opt === 'chill') {
+                playerState.money -= 8000;
+                playerState.energy = Math.min(100, playerState.energy + 40);
+                playerState.health = Math.min(100, playerState.health + 15);
+            } else if (opt === 'buddha') {
+                playerState.money += 3000;
+                playerState.energy = Math.min(100, playerState.energy + 10);
+                playerState.health = Math.min(100, playerState.health + 5);
+            } else if (opt === 'timeout_buddha') {
+                playerState.energy = Math.min(100, playerState.energy + 10);
+                playerState.health = Math.min(100, playerState.health + 5);
+            }
+
+            playSuccess();
+            renderDashboard();
+
+            if (playerState.health <= 0 || playerState.energy <= 0) {
+                playerState.isDead = true;
+                triggerEndGame(false, "sudden_death");
+                return;
+            }
+
+            if (isMultiplayerMode && localRole === 'player') {
+                db.ref(`rooms/${roomPin}/players/${myPlayerId}`).update({
+                    health: playerState.health, energy: playerState.energy, money: playerState.money,
+                    score: playerState.score, isDead: playerState.isDead, currentLifeOption: playerState.currentLifeOption
+                });
+            }
+
+            if (localRole === 'demo') {
+                peers.forEach(p => {
+                    if (p.isDead) return;
+                    let pick = p.type === 'yolo' ? (Math.random() > 0.3 ? 'slave' : 'chill') : (Math.random() > 0.5 ? 'buddha' : 'chill');
+                    p.currentLifeOption = pick;
+                    p.money -= 3000;
+
+                    if (pick === 'slave') {
+                        p.energy = Math.max(0, p.energy - 50); p.health = Math.max(0, p.health - 30); p.money += 12000;
+                    } else if (pick === 'chill') {
+                        p.money -= 8000; p.energy = Math.min(100, p.energy + 40); p.health = Math.min(100, p.health + 15);
+                    } else {
+                        p.money += 3000; p.energy = Math.min(100, p.energy + 10); p.health = Math.min(100, p.health + 5);
+                    }
+                });
+                hostProgressToStageB();
+            }
+        }
+
+        function hostProgressToStageB() {
+            if (localRole === 'demo') enterStageB();
+            else if (localRole === 'host' && isFirebaseActive) db.ref(`rooms/${roomPin}/gameState`).update({ phase: 'shop' });
+        }
+
+        function enterStageB() {
+            document.getElementById('phaseDecision').classList.add('hidden');
+            document.getElementById('phaseShop').classList.remove('hidden');
+
+            const mult = AGE_MATRICES[currentRound].multiplier;
+            document.getElementById('multiplierText').innerText = `${mult.toFixed(1)}x`;
+            playerState.pendingInsurances = { vhis: false, accident: false, ci: false };
+
+            const alertBox = document.getElementById('riskStatusAlert');
+            if (playerState.health < 45 || playerState.energy < 45) {
+                alertBox.innerHTML = `<div class="h-2.5 w-2.5 rounded-full bg-amber-500 animate-ping"></div><div class="text-xs text-amber-700 font-bold">⚠️ 體能欠佳！首次投保本輪加收 <b>+50% 亞健康保費附加費</b>！請儘快續保锁定折扣！</div>`;
+                playWarning();
+            } else {
+                alertBox.innerHTML = `<div class="h-2.5 w-2.5 rounded-full bg-emerald-500"></div><div class="text-xs text-emerald-700 font-bold">💚 健康狀態優秀，投保按標準費率計算。</div>`;
+            }
+
+            updateInsurancePriceLabels();
+            updateCardStyle('vhis', false);
+            updateCardStyle('accident', false);
+            updateCardStyle('ci', false);
+
+            startPhaseTimer(20, handleStageBTimeout, "phaseTimerBar", "shopTimerText");
+            if (localRole === 'demo') document.getElementById('adminSkipShopBtn').classList.remove('hidden');
+        }
+
+        function handleStageBTimeout() {
+            playerState.pendingInsurances = { vhis: false, accident: false, ci: false };
+            confirmStageB();
+        }
+
+        function getPremiumCost(type) {
+            const mult = AGE_MATRICES[currentRound].multiplier;
+            const base = BASE_PREMIUMS[type];
+            let cost = base * mult;
+
+            if (playerState.boughtLastRound[type]) cost = cost * 0.7; // 續保打 7 折
+            else if (playerState.health < 45 || playerState.energy < 45) cost = cost * 1.5; // 亞健康加費
+
+            return Math.round(cost);
+        }
+
+        function updateInsurancePriceLabels() {
+            document.getElementById('buyVhisBtn').innerText = `$${getPremiumCost('vhis')} / 購`;
+            document.getElementById('buyAccidentBtn').innerText = `$${getPremiumCost('accident')} / 購`;
+            document.getElementById('buyCiBtn').innerText = `$${getPremiumCost('ci')} / 購`;
+
+            setDiscountTag('vhis', 'vhisStatusBadge');
+            setDiscountTag('accident', 'accidentStatusBadge');
+            setDiscountTag('ci', 'ciStatusBadge');
+        }
+
+        function setDiscountTag(type, badgeId) {
+            const el = document.getElementById(badgeId);
+            if (playerState.boughtLastRound[type]) {
+                el.innerText = "續保享-30%"; el.className = "text-[9px] bg-emerald-50 text-emerald-700 py-0.5 px-1.5 rounded font-bold border border-emerald-100 shadow-sm";
+            } else if (playerState.health < 45 || playerState.energy < 45) {
+                el.innerText = "亞健康加費+50%"; el.className = "text-[9px] bg-amber-50 text-amber-700 py-0.5 px-1.5 rounded font-bold border border-amber-100 shadow-sm";
+            } else {
+                el.innerText = type === 'vhis' ? "防流感/中毒" : type === 'accident' ? "防摔倒/骨折" : "大病防護";
+                el.className = "text-[9px] bg-slate-100 text-slate-600 py-0.5 px-1.5 rounded font-bold border border-slate-200";
+            }
+        }
+
+        function toggleInsurance(type) {
+            playClick();
+            const cost = getPremiumCost(type);
+
+            if (playerState.pendingInsurances[type]) {
+                playerState.pendingInsurances[type] = false;
+                updateCardStyle(type, false);
+            } else {
+                if (playerState.money < cost) {
+                    alert(`❌ 現金不足，無法支付保費：$${cost}`);
+                    playFail();
+                    return;
+                }
+                playerState.pendingInsurances[type] = true;
+                updateCardStyle(type, true);
+            }
+        }
+
+        function updateCardStyle(type, active) {
+            const card = { vhis: document.getElementById('cardVHIS'), accident: document.getElementById('cardAccident'), ci: document.getElementById('cardCI') }[type];
+            const btn = { vhis: document.getElementById('buyVhisBtn'), accident: document.getElementById('buyAccidentBtn'), ci: document.getElementById('buyCiBtn') }[type];
+
+            if (active) {
+                card.className = "bg-emerald-50/30 border-2 border-emerald-500 p-3 rounded-2xl flex justify-between items-center clean-shadow-green transition duration-300";
+                btn.className = "py-2.5 px-3 rounded-xl text-xs font-black bg-emerald-100 text-emerald-700 hover:bg-emerald-200 transition min-w-[90px] shadow-sm";
+                btn.innerText = "已載入";
+            } else {
+                card.className = "bg-white border-2 border-[#0F172A] p-3 rounded-2xl flex justify-between items-center transition duration-300 shadow-[3px_3px_0px_0px_#0F172A]";
+                const themeColorClass = { vhis: "bg-emerald-600 text-white hover:bg-emerald-700", accident: "bg-sky-500 text-white hover:bg-sky-600", ci: "bg-violet-600 text-white hover:bg-violet-700" }[type];
+                btn.className = `py-2.5 px-3 rounded-xl text-xs font-black ${themeColorClass} transition min-w-[90px] neo-btn`;
+                btn.innerText = `$${getPremiumCost(type)} / 購`;
+            }
+        }
+
+        function confirmStageB() {
+            stopPhaseTimer();
+            let newlyBought = { vhis: false, accident: false, ci: false };
+
+            if (playerState.pendingInsurances.vhis) {
+                playerState.money -= getPremiumCost('vhis'); playerState.has_vhis = true; newlyBought.vhis = true;
+            } else playerState.has_vhis = false;
+
+            if (playerState.pendingInsurances.accident) {
+                playerState.money -= getPremiumCost('accident'); playerState.has_accident = true; newlyBought.accident = true;
+            } else playerState.has_accident = false;
+
+            if (playerState.pendingInsurances.ci) {
+                playerState.money -= getPremiumCost('ci'); playerState.has_ci = true; newlyBought.ci = true;
+            } else playerState.has_ci = false;
+
+            playerState.boughtLastRound = newlyBought;
+            playSuccess();
+            renderDashboard();
+
+            if (isMultiplayerMode && localRole === 'player') {
+                db.ref(`rooms/${roomPin}/players/${myPlayerId}`).update({
+                    money: playerState.money, score: playerState.score,
+                    insurances: { vhis: playerState.has_vhis, accident: playerState.has_accident, ci: playerState.has_ci }
+                });
+            }
+
+            if (localRole === 'demo') {
+                peers.forEach(p => {
+                    if (p.isDead) return;
+                    p.has_vhis = p.has_accident = p.has_ci = false;
+                    const mult = AGE_MATRICES[currentRound].multiplier;
+                    if (p.type === 'balanced' && p.money >= Math.round(BASE_PREMIUMS.vhis * mult)) {
+                        p.money -= Math.round(BASE_PREMIUMS.vhis * mult); p.has_vhis = true;
+                    }
+                });
+                hostProgressToStageC();
+            }
+        }
+
+        function hostProgressToStageC() {
+            if (localRole === 'demo') enterStageC();
+            else if (localRole === 'host' && isFirebaseActive) db.ref(`rooms/${roomPin}/gameState`).update({ phase: 'wheel' });
+        }
+
+        function enterStageC() {
+            document.getElementById('phaseShop').classList.add('hidden');
+            document.getElementById('phaseWheel').classList.remove('hidden');
+
+            const baseRisk = AGE_MATRICES[currentRound].baseRisk;
+            let finalAccidentProb = Math.min(100, Math.max(0, Math.round(baseRisk + (100 - playerState.energy) * 0.9)));
+            let finalIllnessProb = Math.min(100, Math.max(0, Math.round(baseRisk + (100 - playerState.health) * 1.0)));
+
+            document.getElementById('warningLightIcon').className = (playerState.energy < 45 || playerState.health < 45) ? "fa-solid fa-umbrella text-5xl text-amber-500 animate-pulse positive-pulse-glow" : "fa-solid fa-umbrella text-5xl text-emerald-600";
+            document.getElementById('accidentProbText').innerText = `${finalAccidentProb}%`;
+            document.getElementById('illnessProbText').innerText = `${finalIllnessProb}%`;
+
+            const container = document.getElementById('wheelEquippedShields');
+            container.innerHTML = "";
+            if (playerState.has_vhis) container.innerHTML += `<span class="text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-100 font-bold py-1 px-2.5 rounded-full shadow-sm"><i class="fa-solid fa-hospital-user mr-1"></i> 自願醫保</span>`;
+            if (playerState.has_accident) container.innerHTML += `<span class="text-[10px] bg-sky-50 text-sky-700 border border-sky-100 font-bold py-1 px-2.5 rounded-full shadow-sm"><i class="fa-solid fa-crutch mr-1"></i> 意外險</span>`;
+            if (playerState.has_ci) container.innerHTML += `<span class="text-[10px] bg-violet-50 text-violet-700 border border-violet-100 font-bold py-1 px-2.5 rounded-full shadow-sm"><i class="fa-solid fa-shield-halved mr-1"></i> 危疾險</span>`;
+            if (container.innerHTML === "") container.innerHTML = `<span class="text-[10px] bg-rose-50 text-rose-700 border border-rose-100 font-bold py-1 px-2.5 rounded-full shadow-sm">裸奔狀態</span>`;
+
+            const spinBtn = document.getElementById('spinActionBtn');
+            const spinBtnLbl = document.getElementById('spinActionBtnLabel');
+            if (localRole === 'player') {
+                spinBtn.disabled = true;
+                spinBtn.className = "w-full py-4 px-8 rounded-xl text-slate-400 bg-slate-100 font-black text-lg cursor-not-allowed border border-slate-200 shadow-inner";
+                spinBtnLbl.innerText = "等待大螢幕啟動引爆...";
+            } else {
+                spinBtn.disabled = false;
+                spinBtn.className = "w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-4 px-8 rounded-xl shadow-lg transition transform active:scale-95 text-lg cursor-pointer";
+                spinBtnLbl.innerText = "引爆命運之輪 (SPIN)";
+            }
+            updateAggregatedRealtimeStatsPanel();
+        }
+
+        function spinWheel() {
+            playWarning();
+            const btn = document.getElementById('spinActionBtn');
+            btn.disabled = true;
+            btn.className = "w-full py-4 px-8 rounded-xl text-slate-400 bg-slate-100 font-black text-lg cursor-not-allowed border border-slate-200 shadow-inner";
+            document.getElementById('wheelStatusText').innerText = "命運大轉盤旋轉中...";
+
+            const wheel = document.getElementById('wheelGraphic');
+            const targetRotation = 1440 + Math.floor(Math.random() * 360);
+            wheel.style.transform = `rotate(${targetRotation}deg)`;
+
+            const baseRisk = AGE_MATRICES[currentRound].baseRisk;
+            let accidentProb = Math.round(baseRisk + (100 - playerState.energy) * 0.9);
+            let illnessProb = Math.round(baseRisk + (100 - playerState.health) * 1.0);
+
+            let rollAccident = (Math.random() * 100) < accidentProb;
+            let rollIllness = (Math.random() * 100) < illnessProb;
+
+            const vhisPool = [
+                { id: 'flu', title: "🦠 辦公室新型流感侵襲", desc: "高燒不退、全身虛脫，私院門診醫療開支驚人！", type: 'vhis' },
+                { id: 'poison', title: "🤢 飲食不潔導致集體食物中毒", desc: "急診深夜洗胃，自費支出賬單沉重！", type: 'vhis' }
+            ];
+            const accidentPool = [
+                { id: 'sprain', title: "🛹 踩 Skateboard 失控扭傷骨折", desc: "劇烈摔跌急救，骨折固定與復健自付開支不菲！", type: 'accident' },
+                { id: 'climb', title: "🧗 戶外爬山墜落骨裂", desc: "高處失足，巨額急診骨科手術費負擔沉重！", type: 'accident' }
+            ];
+            const ciPool = [
+                { id: 'heart', title: "💔 免疫超載 / 早期心肌炎", desc: "長期爆肝誘發心悸，天價私院心臟專科檢查！", type: 'ci' },
+                { id: 'tumor', title: "🔬 確診早期大腸瘜肉 / 微病變", desc: "確診瘜肉病變，私院微創切除手術開支極高！", type: 'ci' }
+            ];
+
+            setTimeout(() => {
+                if (rollAccident && rollIllness) activeEvent = Math.random() > 0.5 ? accidentPool[Math.floor(Math.random() * accidentPool.length)] : (playerState.health < 45 ? ciPool[Math.floor(Math.random() * ciPool.length)] : vhisPool[Math.floor(Math.random() * vhisPool.length)]);
+                else if (rollAccident) activeEvent = accidentPool[Math.floor(Math.random() * accidentPool.length)];
+                else if (rollIllness) activeEvent = playerState.health < 45 ? ciPool[Math.floor(Math.random() * ciPool.length)] : vhisPool[Math.floor(Math.random() * vhisPool.length)];
+                else activeEvent = { id: 'lucky', title: "🍀 平安順遂的一年", desc: "今年身體棒棒，無災無難，安穩度過！", type: 'lucky' };
+
+                playExplode();
+                document.getElementById('wheelStatusText').innerText = "命運之輪塵埃落定！";
+                
+                if (localRole === 'demo') resolveStageC();
+                else if (localRole === 'host' && isFirebaseActive) db.ref(`rooms/${roomPin}/gameState`).update({ phase: 'resolution', activeEvent: activeEvent });
+            }, 3000);
+        }
+
+        function resolveStageC() {
+            document.getElementById('phaseWheel').classList.add('hidden');
+            document.getElementById('phaseResolution').classList.remove('hidden');
+
+            document.getElementById('resolvedEventTitle').innerText = activeEvent.title;
+            const memeBox = document.getElementById('resolvedMemeBox');
+            
+            const isProtected = { lucky: true, vhis: playerState.has_vhis, accident: playerState.has_accident, ci: playerState.has_ci }[activeEvent.type];
+
+            let dHealth = 0, dEnergy = 0, dMoney = 0;
+            let triggeredHospital = false;
+            let overworkHealthAmplifier = playerState.health < 50 ? 10 : 0;
+            let overworkEnergyAmplifier = playerState.energy < 50 ? 15 : 0;
+
+            if (activeEvent.type === 'lucky') {
+                dHealth = 10; dEnergy = 10;
+                memeBox.className = "p-4 rounded-2xl bg-emerald-50 border-2 border-emerald-500 text-emerald-800 font-bold text-xs leading-relaxed text-left shadow-sm";
+                memeBox.innerHTML = `🍀 <b>歲月靜好！</b><br>${activeEvent.desc}（健康及精力各回補 +10%）！`;
+            } else {
+                if (activeEvent.type === 'vhis') {
+                    if (isProtected) {
+                        dHealth = -(10 + overworkHealthAmplifier); dEnergy = -(10 + overworkEnergyAmplifier);
+                        memeBox.className = "p-4 rounded-2xl bg-emerald-50 border-2 border-emerald-500 text-emerald-800 font-bold text-xs text-left shadow-sm";
+                        memeBox.innerHTML = `🛡️ <b>自願醫保理賠成功！</b><br>${activeEvent.desc} 私家醫院看病花銷由 Lifegator 全數理賠！下回合享康復 Buff！`;
+                        playerState.payoutCollected += 6000; playerState.nextRoundBuffs = { health: 20, energy: 20 };
+                    } else {
+                        dHealth = -(30 + overworkHealthAmplifier); dEnergy = -(30 + overworkEnergyAmplifier); dMoney = -6000;
+                        playerState.medicalFeesPaid += 6000;
+                        memeBox.className = "p-4 rounded-2xl bg-rose-50 border-2 border-rose-500 text-rose-800 font-bold text-xs text-left shadow-sm";
+                        memeBox.innerHTML = `💀 <b>未投保 VHIS 自願醫保！</b><br>${activeEvent.desc} 你必須自費承擔天價醫藥費，<b>直接扣除資產 -$6,000</b>！`;
+                    }
+                } 
+                else if (activeEvent.type === 'accident') {
+                    if (isProtected) {
+                        dHealth = -(10 + overworkHealthAmplifier); dEnergy = -(10 + overworkEnergyAmplifier);
+                        memeBox.className = "p-4 rounded-2xl bg-emerald-50 border-2 border-emerald-500 text-emerald-800 font-bold text-xs text-left shadow-sm";
+                        memeBox.innerHTML = `🛡️ <b>意外保理賠成功！</b><br>${activeEvent.desc} 手術及物理復健由意外險全面兜底（自付$0）！下回合享康復 Buff！`;
+                        playerState.payoutCollected += 12000; playerState.nextRoundBuffs = { health: 20, energy: 20 };
+                    } else {
+                        dHealth = -(25 + overworkHealthAmplifier); dEnergy = -(40 + overworkEnergyAmplifier); dMoney = -4000;
+                        playerState.medicalFeesPaid += 4000;
+                        memeBox.className = "p-4 rounded-2xl bg-rose-50 border-2 border-rose-500 text-rose-800 font-bold text-xs text-left shadow-sm";
+                        memeBox.innerHTML = `🦴 <b>未配置高額意外險！</b><br>${activeEvent.desc} 意外摔骨折無保險買單，<b>自費醫保支出扣除 -$4,000</b>！`;
+                    }
+                }
+                else if (activeEvent.type === 'ci') {
+                    if (isProtected) {
+                        dHealth = -15; dEnergy = -15; dMoney = 30000;
+                        memeBox.className = "p-4 rounded-2xl bg-violet-50 border-2 border-violet-500 text-violet-800 font-bold text-xs text-left shadow-sm";
+                        memeBox.innerHTML = `💰 <b>危疾險理賠金入賬！</b><br>${activeEvent.desc} 幸好配置了 CI 終身危疾卡！<b>直接賠付發放大額補償金 +$30,000</b>！`;
+                        playerState.payoutCollected += 30000; playerState.nextRoundBuffs = { health: 20, energy: 20 };
+                    } else {
+                        dHealth = -(50 + overworkHealthAmplifier); dEnergy = -(50 + overworkEnergyAmplifier); dMoney = -15000;
+                        playerState.medicalFeesPaid += 15000;
+                        memeBox.className = "p-4 rounded-2xl bg-rose-50 border-2 border-rose-500 text-rose-800 font-bold text-xs text-left shadow-sm";
+                        memeBox.innerHTML = `💀 <b>大病未配置危疾險！</b><br>${activeEvent.desc} 確診重疾無補償，<b>資產積蓄慘遭醫院重創暴扣 -$15,000</b>！`;
+                    }
+                }
+            }
+
+            playerState.health = Math.max(0, playerState.health + dHealth);
+            playerState.energy = Math.max(0, playerState.energy + dEnergy);
+            playerState.money += dMoney;
+
+            const hospitalCard = document.getElementById('resolveHospitalCard');
+            hospitalCard.classList.add('hidden');
+
+            if (playerState.health <= 0 || playerState.energy <= 0) {
+                playerState.isDead = true; triggerEndGame(false, "sudden_death"); return;
+            } else if (playerState.health < 20 || playerState.energy < 20) {
+                if (playerState.money >= 4000) {
+                    playerState.money -= 4000; playerState.health += 15; playerState.energy += 15;
+                    playerState.hospitalizedCount++; playerState.medicalFeesPaid += 4000;
+                    hospitalCard.classList.remove('hidden'); triggeredHospital = true;
+                } else {
+                    playerState.isDead = true; triggerEndGame(false, "bankrupted"); return;
+                }
+            }
+
+            document.getElementById('resolveHealthChange').innerText = `${dHealth >= 0 ? '+' : ''}${dHealth}%`;
+            document.getElementById('resolveHealthChange').className = `text-sm font-black ${dHealth >= 0 ? 'text-emerald-600' : 'text-rose-600'}`;
+            document.getElementById('resolveEnergyChange').innerText = `${dEnergy >= 0 ? '+' : ''}${dEnergy}%`;
+            document.getElementById('resolveEnergyChange').className = `text-sm font-black ${dEnergy >= 0 ? 'text-emerald-600' : 'text-rose-600'}`;
+
+            const actualSpent = dMoney + (triggeredHospital ? -4000 : 0);
+            document.getElementById('resolveMoneyChange').innerText = `${actualSpent >= 0 ? '+' : ''}$${actualSpent.toLocaleString()}`;
+            document.getElementById('resolveMoneyChange').className = `text-sm font-black ${actualSpent >= 0 ? 'text-emerald-600' : 'text-rose-600'}`;
+
+            document.getElementById('insuranceBuffSummary').className = (isProtected && activeEvent.type !== 'lucky') ? "bg-emerald-50 border border-emerald-100 p-4 rounded-2xl" : "hidden";
+            renderDashboard();
+
+            if (isMultiplayerMode && localRole === 'player') {
+                db.ref(`rooms/${roomPin}/players/${myPlayerId}`).update({ health: playerState.health, energy: playerState.energy, money: playerState.money, score: playerState.score, isDead: playerState.isDead });
+            }
+
+            if (localRole === 'demo') {
+                peers.forEach(p => {
+                    if (p.isDead) return;
+                    let aiEvent = Math.random() > 0.5 ? 'accident' : 'lucky';
+                    if (aiEvent === 'accident' && !p.has_accident) {
+                        p.health = Math.max(0, p.health - 20); p.energy = Math.max(0, p.energy - 30); p.money -= 4000;
+                    }
+                    if (p.health <= 0 || p.energy <= 0) p.isDead = true;
+                });
+            }
+            updateAggregatedRealtimeStatsPanel();
+        }
+
+        function advanceRound() {
+            if (currentRound >= 5) {
+                triggerEndGame(true, "survived");
+                return;
+            }
+
+            if (playerState.nextRoundBuffs.health > 0 || playerState.nextRoundBuffs.energy > 0) {
+                playerState.health = Math.min(100, playerState.health + playerState.nextRoundBuffs.health);
+                playerState.energy = Math.min(100, playerState.energy + playerState.nextRoundBuffs.energy);
+                playerState.nextRoundBuffs = { health: 0, energy: 0 };
+            }
+
+            playerState.has_vhis = playerState.has_accident = playerState.has_ci = false;
+            currentRound++;
+
+            if (isMultiplayerMode && localRole === 'host') {
+                db.ref(`rooms/${roomPin}/gameState`).update({ phase: 'decision', currentRound: currentRound });
+            } else {
+                enterStageA();
+            }
+        }
+
+        function triggerEndGame(survived, reason) {
+            stopPhaseTimer();
+            document.getElementById('gameplayScreen').classList.add('hidden');
+            document.getElementById('gameOverScreen').classList.remove('hidden');
+            document.getElementById('recapPlayerName').innerText = playerState.name;
+
+            const finalScore = playerState.score;
+            document.getElementById('recapScoreVal').innerText = `${finalScore} / 100`;
+            document.getElementById('recapHospitalVal').innerText = `${playerState.hospitalizedCount} 次`;
+            document.getElementById('recapMedicalFeeVal').innerText = `$${playerState.medicalFeesPaid.toLocaleString()}`;
+            document.getElementById('recapPayoutVal').innerText = `$${playerState.payoutCollected.toLocaleString()}`;
+
+            let grade = "C 裸奔常客";
+            let desc = "";
+
+            if (!survived) {
+                playFail();
+                grade = "🏥 進入療養院休整";
+                desc = "你的人生在拼搏中健康或精力不幸超載歸零。因為連續當奴工通宵卻缺少了相應的醫療或意外險，當風險來臨被迫自費看病耗光資產。下次請記住，Lifegator 才是你打拼路上的黃金血包！";
+            } else {
+                playSuccess();
+                if (finalScore >= 80) {
+                    grade = "👑 A+ 青春 Wellness 達人";
+                    desc = "極致的風險管理大師！你在瘋狂爆肝和補狀態中游刃有餘，並且利用 Lifegator 提前投保鎖定折扣，把所有意外大病威脅消弭於無形。你成功逆襲了人生！";
+                } else if (finalScore >= 50) {
+                    grade = "🏃 B 穩健生存青年";
+                    desc = "恭喜你！雖然中途遭遇了幾次意外被扣除了資產，但依靠基礎防護你依舊生存。若想活得更富有，下次保險策略一定要提前續保鎖定折扣！";
+                } else {
+                    grade = "🩹 C- 亞健康邊緣人";
+                    desc = "雖然艱難活到了 32 歲，但你的資產和健康值殘破不堪，在為醫院打工。風險分散是你在 Gator-VERSE 最需要補課的一環。";
+                }
+            }
+
+            document.getElementById('recapScoreGrade').innerText = grade;
+            document.getElementById('recapDescription').innerText = desc;
+
+            const shareText = `【Gator-VERSE 青春健康10年挑戰】\n我扮演的 [${playerState.name}] 最終 Wellness 得分：${finalScore} 分！\n獲得評級：${grade}！\n理賠總計：$${playerState.payoutCollected.toLocaleString()}！\n快來 Lifegator.net 一起體驗！`;
+            document.getElementById('wrappedCopyText').innerText = shareText;
+        }
+
+        function copyToClipboard() {
+            const codeText = document.getElementById('wrappedCopyText').innerText;
+            const textarea = document.createElement("textarea");
+            textarea.value = codeText; document.body.appendChild(textarea);
+            textarea.select(); document.execCommand('copy'); document.body.removeChild(textarea);
+            playSuccess(); alert("📋 分享代碼已成功複製到剪貼簿！");
+        }
+
+        function resetGame() {
+            stopPhaseTimer(); playSuccess();
+            currentRound = 1; activeEvent = null;
+
+            playerState = {
+                name: playerState.name, health: 100, energy: 100, money: 10000,
+                has_vhis: false, has_accident: false, has_ci: false, isDead: false, score: 100,
+                payoutCollected: 0, hospitalizedCount: 0, medicalFeesPaid: 0, currentLifeOption: null,
+                pendingInsurances: { vhis: false, accident: false, ci: false },
+                boughtLastRound: { vhis: false, accident: false, ci: false }, nextRoundBuffs: { health: 0, energy: 0 }
+            };
+
+            const advanceBtn = document.getElementById('advanceBtn');
+            advanceBtn.innerHTML = `<span id="advanceBtnText">邁向下一回合</span> <i class="fa-solid fa-arrow-right ml-1"></i>`;
+
+            document.getElementById('gameOverScreen').classList.add('hidden');
+            document.getElementById('setupScreen').classList.remove('hidden');
+            document.getElementById('wheelGraphic').style.transform = `rotate(0deg)`;
+            document.getElementById('wheelStatusText').innerText = "命運之輪就緒";
+
+            if (isFirebaseActive && localRole === 'host') {
+                db.ref(`rooms/${roomPin}`).remove(); generateHostRoom();
+                document.getElementById('hostLobbyPanel').classList.remove('hidden');
+                document.getElementById('hostLeaderboardPanel').classList.add('hidden');
+            } else if (localRole === 'demo') {
+                document.getElementById('hostControlPanel').classList.remove('hidden');
+                document.getElementById('hostLobbyPanel').classList.remove('hidden');
+                document.getElementById('hostLeaderboardPanel').classList.add('hidden');
+            }
+        }
+
+        function renderDashboard() {
+            document.getElementById('playerMoneyText').innerText = `$${playerState.money.toLocaleString()}`;
+            document.getElementById('playerHealthText').innerText = `${playerState.health}%`;
+            document.getElementById('playerEnergyText').innerText = `${playerState.energy}%`;
+            
+            document.getElementById('playerHealthText').className = playerState.health < 30 ? "text-lg font-black text-rose-500 animate-pulse" : "text-lg font-black text-emerald-600";
+            document.getElementById('playerEnergyText').className = playerState.energy < 30 ? "text-lg font-black text-amber-500 animate-pulse" : "text-lg font-black text-sky-600";
+
+            playerState.score = calculateWellnessScore(playerState.health, playerState.money, playerState.energy);
+            renderLeaderboard();
+        }
+
+        window.selectAppMode = selectAppMode;
+        window.joinOrStartGame = joinOrStartGame;
+        window.hostStartGame = hostStartGame;
+        window.hostProgressToStageB = hostProgressToStageB;
+        window.hostProgressToStageC = hostProgressToStageC;
+        window.spinWheel = spinWheel;
+        window.advanceRound = advanceRound;
+        window.resetGame = resetGame;
+        window.toggleInsurance = toggleInsurance;
+        window.selectOption = selectOption;
+        window.confirmStageA = confirmStageA;
+        window.confirmStageB = confirmStageB;
+        window.copyToClipboard = copyToClipboard;
+        window.toggleMute = toggleMute;
+
+        window.onload = function() {
+            initAudio();
+            const urlParams = new URLSearchParams(window.location.search);
+            const pinParam = urlParams.get('pin');
+            if (pinParam) {
+                selectAppMode('player');
+                document.getElementById('playerRoomPinInput').value = pinParam;
+            }
+        }
+    </script>
+</body>
+</html>
