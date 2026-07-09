@@ -814,7 +814,7 @@
         if (typeof firebase !== 'undefined' && firebaseConfig && firebaseConfig.apiKey) {
             try {
                 if (!firebaseConfig.databaseURL && firebaseConfig.projectId) {
-                    firebaseConfig.databaseURL = `https://${firebaseConfig.projectId}-default-rtdb.firebaseio.com`;
+                    firebaseConfig.databaseURL = `https://${firebaseConfig.projectId}-default-rtdb.asia-southeast1.firebasedatabase.app`;
                 }
                 firebase.initializeApp(firebaseConfig);
                 db = firebase.database();
