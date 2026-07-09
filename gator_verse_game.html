@@ -951,6 +951,11 @@
 
         function joinOrStartGame() {
             playClick();
+            
+            if (myPlayerId) {
+                return;
+            }
+            
             const pinVal = document.getElementById('playerRoomPinInput').value.trim();
             const nameVal = document.getElementById('playerNameInput').value.trim() || '學生';
 
@@ -995,8 +1000,13 @@
         function handleHostStateChange(state) {
             currentRound = state.currentRound;
             if (state.phase === 'lobby') {
-                document.getElementById('setupScreen').classList.remove('hidden');
-                document.getElementById('gameplayScreen').classList.add('hidden');
+                if (localRole === 'player') {
+                    document.getElementById('setupScreen').classList.add('hidden');
+                    document.getElementById('gameplayScreen').classList.remove('hidden');
+                } else {
+                    document.getElementById('setupScreen').classList.remove('hidden');
+                    document.getElementById('gameplayScreen').classList.add('hidden');
+                }
             } else if (state.phase === 'decision') {
                 enterStageA();
             } else if (state.phase === 'shop') {
