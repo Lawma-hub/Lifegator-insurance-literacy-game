@@ -913,9 +913,14 @@
                 }
             }
 
+            console.log('[HOST] Creating room with PIN:', roomPin);
             db.ref(`rooms/${roomPin}`).set({
                 gameState: { currentRound: 1, phase: 'lobby', activeEvent: null, timer: 20 },
                 players: {}
+            }).then(() => {
+                console.log('[HOST] Room created successfully in Firebase');
+            }).catch((err) => {
+                console.error('[HOST] Failed to create room:', err);
             });
 
             db.ref(`rooms/${roomPin}/players`).on('value', (snapshot) => {
@@ -955,6 +960,7 @@
                 }
                 
                 db.ref(`rooms/${pinVal}`).once('value', (snapshot) => {
+                    console.log('[PLAYER] Checking room:', pinVal, 'Exists:', snapshot.exists());
                     if (!snapshot.exists()) {
                         alert(`❌ 錯誤：找不到房號 ${pinVal}，請確認 PIN 是否正確！`);
                         return;
