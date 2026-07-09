@@ -187,6 +187,15 @@
                 </div>
             </div>
 
+                <!-- Host Start Game Control (visible in host mode lobby) -->
+                <div id="hostStartPanel" class="mt-4 hidden p-3.5 bg-[#FFFDE7] border-2 border-[#0F172A] rounded-2xl text-left shadow-inner">
+                    <span class="block text-[10px] font-black text-amber-700 uppercase tracking-widest mb-2"><i class="fa-solid fa-gears mr-1"></i> 主機房主控盤 (Host Controller)</span>
+                    <p class="text-[11px] text-slate-600 leading-snug mb-3 font-bold">當所有同學都完成連線進入大廳後，請點擊下方開始遊戲控制全場：</p>
+                    <button onclick="hostStartGame()" class="w-full neo-btn bg-[#2E7D32] hover:bg-[#1B5E20] text-white text-xs font-black uppercase py-2.5 px-4 rounded-lg transition shadow-md">
+                        <i class="fa-solid fa-play mr-1"></i> 全場同步開始遊戲
+                    </button>
+                </div>
+
             <!-- Fate Wheel Graphic Panel -->
             <div class="my-4 bg-[#FDFBF7] border-2 border-[#0F172A] rounded-2xl p-4 flex flex-col items-center justify-center relative overflow-hidden h-40 shadow-inner">
                 <div class="absolute inset-0 bg-gradient-to-b from-transparent to-emerald-50/20 pointer-events-none"></div>
@@ -853,7 +862,7 @@
                 if (isFirebaseActive) {
                     sysStatus.innerText = "多人連線大廳就緒";
                     generateHostRoom();
-                    document.getElementById('hostControlPanel').classList.remove('hidden');
+                    document.getElementById('hostStartPanel').classList.remove('hidden');
                 } else {
                     sysStatus.innerText = "單機 Demo 伺服器 (Firebase未配)";
                     setupLocalDemoHost();
@@ -1026,6 +1035,7 @@
             playSuccess();
             if (localRole === 'demo') {
                 document.getElementById('hostControlPanel').classList.add('hidden');
+                document.getElementById('hostStartPanel').classList.add('hidden');
                 document.getElementById('hostLobbyPanel').classList.add('hidden');
                 document.getElementById('hostLeaderboardPanel').classList.remove('hidden');
                 document.getElementById('setupScreen').classList.add('hidden');
@@ -1033,6 +1043,7 @@
                 enterStageA();
             } else if (localRole === 'host' && isFirebaseActive) {
                 db.ref(`rooms/${roomPin}/gameState`).update({ phase: 'decision', currentRound: 1 });
+                document.getElementById('hostStartPanel').classList.add('hidden');
                 document.getElementById('hostLobbyPanel').classList.add('hidden');
                 document.getElementById('hostLeaderboardPanel').classList.remove('hidden');
             }
@@ -1756,10 +1767,12 @@
 
             if (isFirebaseActive && localRole === 'host') {
                 db.ref(`rooms/${roomPin}`).remove(); generateHostRoom();
+                document.getElementById('hostStartPanel').classList.remove('hidden');
                 document.getElementById('hostLobbyPanel').classList.remove('hidden');
                 document.getElementById('hostLeaderboardPanel').classList.add('hidden');
             } else if (localRole === 'demo') {
                 document.getElementById('hostControlPanel').classList.remove('hidden');
+                document.getElementById('hostStartPanel').classList.remove('hidden');
                 document.getElementById('hostLobbyPanel').classList.remove('hidden');
                 document.getElementById('hostLeaderboardPanel').classList.add('hidden');
             }
