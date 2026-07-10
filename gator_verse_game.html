@@ -185,7 +185,6 @@
                     </h3>
                     <div id="leaderboardList" class="space-y-2.5"></div>
                 </div>
-            </div>
 
                 <!-- Host Start Game Control (visible in host mode lobby) -->
                 <div id="hostStartPanel" class="mt-4 hidden p-3.5 bg-[#FFFDE7] border-2 border-[#0F172A] rounded-2xl text-left shadow-inner">
@@ -195,6 +194,19 @@
                         <i class="fa-solid fa-play mr-1"></i> 全場同步開始遊戲
                     </button>
                 </div>
+
+                <!-- Host In-Game Master Controller (drives all 5 rounds x 4 stages) -->
+                <div id="hostGameControlPanel" class="mt-4 hidden p-3.5 bg-[#E8F5E9] border-2 border-[#0F172A] rounded-2xl text-left shadow-inner">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-[10px] font-black text-emerald-700 uppercase tracking-widest"><i class="fa-solid fa-satellite-dish mr-1"></i> 全場同步控制中 (Live)</span>
+                        <span id="hostPhaseCountdown" class="text-xs font-black text-emerald-700 font-mono">--</span>
+                    </div>
+                    <p id="hostPhaseLabel" class="text-sm font-black text-slate-800 mb-3">階段 A：投資自己</p>
+                    <button onclick="hostSkipPhase()" id="hostSkipBtn" class="w-full neo-btn bg-[#2E7D32] hover:bg-[#1B5E20] text-white text-xs font-black uppercase py-2.5 px-4 rounded-lg transition shadow-md">
+                        <i class="fa-solid fa-forward mr-1"></i> 立即進入下一階段
+                    </button>
+                </div>
+            </div>
 
             <!-- Fate Wheel Graphic Panel -->
             <div class="my-4 bg-[#FDFBF7] border-2 border-[#0F172A] rounded-2xl p-4 flex flex-col items-center justify-center relative overflow-hidden h-40 shadow-inner">
@@ -489,7 +501,7 @@
                     </div>
 
                     <div class="mt-6 flex flex-col gap-2">
-                        <button onclick="confirmStageB()"
+                        <button onclick="confirmStageB()" id="confirmShopBtn"
                                 class="w-full bg-gradient-to-r from-violet-500 to-indigo-600 text-white font-black py-4 px-6 rounded-xl text-sm uppercase tracking-wider neo-btn">
                             配置完成，進入命運考驗 <i class="fa-solid fa-dice-six mr-1"></i>
                         </button>
@@ -731,6 +743,16 @@
         let timerInterval = null;
         let countdownTimer = 20;
 
+        // ===== Multiplayer sync state (host-driven game loop) =====
+        let currentPhase = 'lobby';      // lobby | decision | shop | wheel | resolution | gameover
+        let joining = false;             // prevents double-join ghost players
+        let lastPhaseKey = '';           // dedupes repeated Firebase gameState fires (player side)
+        let decisionCommitted = false;   // has this round's Stage A been applied?
+        let shopCommitted = false;       // has this round's Stage B been applied?
+        let hostTimer = null;            // host master-loop countdown
+        let hostCountdown = 0;
+        let hostPhaseAdvance = null;     // callback the host "skip" button jumps to
+
         function initAudio() {
             if (!synth) {
                 try {
@@ -961,11 +983,11 @@
 
         function joinOrStartGame() {
             playClick();
-            
-            if (myPlayerId) {
+
+            if (myPlayerId || joining) {
                 return;
             }
-            
+
             const pinVal = document.getElementById('playerRoomPinInput').value.trim();
             const nameVal = document.getElementById('playerNameInput').value.trim() || '學生';
 
@@ -974,11 +996,17 @@
                     alert("請先輸入大螢幕投影上的 4 位數 Room PIN！");
                     return;
                 }
-                
+
+                joining = true;
+                const joinBtn = document.getElementById('setupMainActionBtn');
+                if (joinBtn) { joinBtn.disabled = true; joinBtn.innerHTML = '連線中... <i class="fa-solid fa-spinner fa-spin ml-2"></i>'; }
+
                 db.ref(`rooms/${pinVal}`).once('value', (snapshot) => {
                     console.log('[PLAYER] Checking room:', pinVal, 'Exists:', snapshot.exists());
                     if (!snapshot.exists()) {
                         alert(`❌ 錯誤：找不到房號 ${pinVal}，請確認 PIN 是否正確！`);
+                        joining = false;
+                        if (joinBtn) { joinBtn.disabled = false; joinBtn.innerHTML = '進入戰局 <i class="fa-solid fa-arrow-right ml-2"></i>'; }
                         return;
                     }
 
@@ -1007,28 +1035,88 @@
             }
         }
 
+        // ============ PLAYER SIDE: follow host phase broadcasts ============
         function handleHostStateChange(state) {
-            currentRound = state.currentRound;
-            if (state.phase === 'lobby') {
+            if (!state || !state.phase) return;
+            const phase = state.phase;
+            const round = state.currentRound || 1;
+            const key = phase + '#' + round;
+            if (key === lastPhaseKey) return; // dedupe repeated Firebase fires
+            lastPhaseKey = key;
+            currentPhase = phase;
+
+            if (phase === 'lobby') {
                 if (localRole === 'player') {
                     document.getElementById('setupScreen').classList.add('hidden');
                     document.getElementById('gameplayScreen').classList.remove('hidden');
+                    showAllPhaseScreens(false);
+                    renderDashboard();
                 } else {
                     document.getElementById('setupScreen').classList.remove('hidden');
                     document.getElementById('gameplayScreen').classList.add('hidden');
                 }
-            } else if (state.phase === 'decision') {
+                return;
+            }
+
+            if (localRole !== 'player') return; // host/demo do not follow broadcasts
+
+            if (phase === 'decision') {
+                if (round > 1 && round !== currentRound) applyPlayerRoundStart();
+                currentRound = round;
+                decisionCommitted = false;
                 enterStageA();
-            } else if (state.phase === 'shop') {
+            } else if (phase === 'shop') {
+                currentRound = round;
+                commitDecisionAuto();
+                if (playerState.isDead) return;
+                shopCommitted = false;
                 enterStageB();
-            } else if (state.phase === 'wheel') {
+            } else if (phase === 'wheel') {
+                currentRound = round;
+                commitDecisionAuto();
+                if (playerState.isDead) return;
+                commitShopAuto();
                 enterStageC();
-            } else if (state.phase === 'resolution') {
+            } else if (phase === 'resolution') {
+                currentRound = round;
+                commitDecisionAuto();
+                if (playerState.isDead) return;
+                commitShopAuto();
                 activeEvent = state.activeEvent;
                 resolveStageC();
-            } else if (state.phase === 'gameover') {
+            } else if (phase === 'gameover') {
                 triggerEndGame(true, 'survived');
             }
+        }
+
+        function showAllPhaseScreens(show) {
+            ['phaseDecision','phaseShop','phaseWheel','phaseResolution'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.classList.add('hidden');
+            });
+        }
+
+        // Apply between-round buffs and clear last round's insurance (player side)
+        function applyPlayerRoundStart() {
+            if (playerState.nextRoundBuffs.health > 0 || playerState.nextRoundBuffs.energy > 0) {
+                playerState.health = Math.min(100, playerState.health + playerState.nextRoundBuffs.health);
+                playerState.energy = Math.min(100, playerState.energy + playerState.nextRoundBuffs.energy);
+                playerState.nextRoundBuffs = { health: 0, energy: 0 };
+            }
+            playerState.has_vhis = playerState.has_accident = playerState.has_ci = false;
+        }
+
+        // Auto-commit Stage A if the host advanced before the player confirmed
+        function commitDecisionAuto() {
+            if (decisionCommitted) return;
+            if (!playerState.currentLifeOption) playerState.currentLifeOption = 'timeout_buddha';
+            confirmStageA();
+        }
+
+        // Auto-commit Stage B if the host advanced before the player confirmed
+        function commitShopAuto() {
+            if (shopCommitted) return;
+            confirmStageB();
         }
 
         function hostStartGame() {
@@ -1042,11 +1130,151 @@
                 document.getElementById('gameplayScreen').classList.remove('hidden');
                 enterStageA();
             } else if (localRole === 'host' && isFirebaseActive) {
-                db.ref(`rooms/${roomPin}/gameState`).update({ phase: 'decision', currentRound: 1 });
                 document.getElementById('hostStartPanel').classList.add('hidden');
                 document.getElementById('hostLobbyPanel').classList.add('hidden');
                 document.getElementById('hostLeaderboardPanel').classList.remove('hidden');
+                document.getElementById('hostGameControlPanel').classList.remove('hidden');
+                currentRound = 1;
+                hostRunDecisionPhase();
             }
+        }
+
+        // ============ HOST SIDE: master game loop (broadcasts every phase) ============
+        function hostBroadcast(patch) {
+            if (isFirebaseActive && roomPin) db.ref(`rooms/${roomPin}/gameState`).update(patch);
+        }
+
+        function hostSetTimer(seconds, cb) {
+            clearInterval(hostTimer);
+            hostCountdown = seconds;
+            hostPhaseAdvance = cb;
+            const el = document.getElementById('hostPhaseCountdown');
+            if (el) el.innerText = hostCountdown + 's';
+            hostTimer = setInterval(() => {
+                hostCountdown--;
+                if (el) el.innerText = hostCountdown + 's';
+                if (hostCountdown <= 0) { clearInterval(hostTimer); cb(); }
+            }, 1000);
+        }
+
+        function hostSkipPhase() {
+            playClick();
+            if (hostPhaseAdvance) {
+                clearInterval(hostTimer);
+                const fn = hostPhaseAdvance;
+                hostPhaseAdvance = null;
+                fn();
+            }
+        }
+
+        function hostSetControls(label, btnHtml, showBtn) {
+            document.getElementById('hostPhaseLabel').innerText = label;
+            const btn = document.getElementById('hostSkipBtn');
+            if (showBtn === false) { btn.classList.add('hidden'); }
+            else { btn.classList.remove('hidden'); btn.disabled = false; btn.innerHTML = btnHtml; }
+            document.getElementById('activeStageIndicator').innerText = 'Stage: ' + currentPhase.toUpperCase();
+            updateAggregatedRealtimeStatsPanel();
+        }
+
+        function hostRunDecisionPhase() {
+            currentPhase = 'decision';
+            hostBroadcast({ phase: 'decision', currentRound: currentRound, activeEvent: null });
+            hostSetControls(`階段 A：投資自己 (回合 ${currentRound}/5)`, '<i class="fa-solid fa-forward mr-1"></i> 進入保險市集 (Stage B)', true);
+            hostSetTimer(20, hostRunShopPhase);
+        }
+
+        function hostRunShopPhase() {
+            currentPhase = 'shop';
+            hostBroadcast({ phase: 'shop' });
+            hostSetControls('階段 B：Lifegator 保險市集', '<i class="fa-solid fa-forward mr-1"></i> 進入命運之輪 (Stage C)', true);
+            hostSetTimer(20, hostRunWheelPhase);
+        }
+
+        function hostRunWheelPhase() {
+            currentPhase = 'wheel';
+            hostBroadcast({ phase: 'wheel' });
+            hostSetControls('階段 C：等待命運之輪引爆', '<i class="fa-solid fa-bolt mr-1"></i> 立即引爆命運之輪', true);
+            document.getElementById('wheelStatusText').innerText = '全體防禦卡已加載，即將引爆！';
+            hostSetTimer(5, hostSpinWheel);
+        }
+
+        function hostSpinWheel() {
+            clearInterval(hostTimer);
+            hostPhaseAdvance = null;
+            playWarning();
+            document.getElementById('hostPhaseLabel').innerText = '命運之輪旋轉中...';
+            document.getElementById('hostPhaseCountdown').innerText = '🎡';
+            document.getElementById('hostSkipBtn').disabled = true;
+            document.getElementById('wheelStatusText').innerText = '命運大轉盤旋轉中...';
+            const wheel = document.getElementById('wheelGraphic');
+            wheel.style.transform = `rotate(${1440 + Math.floor(Math.random() * 360)}deg)`;
+
+            const ev = rollGlobalEvent(currentRound);
+            setTimeout(() => {
+                playExplode();
+                document.getElementById('wheelStatusText').innerText = '命運之輪塵埃落定！';
+                activeEvent = ev;
+                hostRunResolutionPhase(ev);
+            }, 3000);
+        }
+
+        function hostRunResolutionPhase(ev) {
+            currentPhase = 'resolution';
+            hostBroadcast({ phase: 'resolution', activeEvent: ev });
+            const label = ev.type === 'lucky' ? `命運宣告：${ev.title}` : `命運宣告：${ev.title}`;
+            const nextLabel = currentRound >= 5 ? '<i class="fa-solid fa-flag-checkered mr-1"></i> 公佈最終成績' : '<i class="fa-solid fa-forward mr-1"></i> 邁向下一回合';
+            hostSetControls(label, nextLabel, true);
+            hostSetTimer(8, hostAdvanceRound);
+        }
+
+        function hostAdvanceRound() {
+            if (currentRound >= 5) { hostEndGame(); return; }
+            currentRound++;
+            hostRunDecisionPhase();
+        }
+
+        function hostEndGame() {
+            clearInterval(hostTimer);
+            hostPhaseAdvance = null;
+            currentPhase = 'gameover';
+            hostBroadcast({ phase: 'gameover' });
+            document.getElementById('hostPhaseLabel').innerText = '🏁 全場遊戲已結束！最終成績已公佈';
+            document.getElementById('hostPhaseCountdown').innerText = '✓';
+            document.getElementById('hostSkipBtn').classList.add('hidden');
+            document.getElementById('wheelStatusText').innerText = '本場遊戲已結束 🏁';
+            document.getElementById('activeStageIndicator').innerText = 'Stage: GAMEOVER';
+            updateAggregatedRealtimeStatsPanel();
+        }
+
+        // Pick ONE global fate event for the whole class this round.
+        // Everyone faces the same event TYPE; whether they are protected
+        // depends on each player's own insurance coverage.
+        function rollGlobalEvent(round) {
+            const vhisPool = [
+                { id: 'flu', title: "🦠 辦公室新型流感侵襲", desc: "高燒不退、全身虛脫，私院門診醫療開支驚人！", type: 'vhis' },
+                { id: 'poison', title: "🤢 飲食不潔導致集體食物中毒", desc: "急診深夜洗胃，自費支出賬單沉重！", type: 'vhis' }
+            ];
+            const accidentPool = [
+                { id: 'sprain', title: "🛹 踩 Skateboard 失控扭傷骨折", desc: "劇烈摔跌急救，骨折固定與復健自付開支不菲！", type: 'accident' },
+                { id: 'climb', title: "🧗 戶外爬山壜落骨裂", desc: "高處失足，巨額急診骨科手術費負擔沉重！", type: 'accident' }
+            ];
+            const ciPool = [
+                { id: 'heart', title: "💔 免疫超載 / 早期心肌炎", desc: "長期爆肝誘發心悸，天價私院心臟專科檢查！", type: 'ci' },
+                { id: 'tumor', title: "🔬 確診早期大腸瘕肉 / 微病變", desc: "確診瘕肉病變，私院微創切除手術開支極高！", type: 'ci' }
+            ];
+
+            const luckyChance = 35 - (round - 1) * 5; // 35,30,25,20,15
+            if (Math.random() * 100 < luckyChance) {
+                return { id: 'lucky', title: "🍀 平安順遂的一年", desc: "今年身體棒棒，無災無難，安穩度過！", type: 'lucky' };
+            }
+            const roll = Math.random() * 100;
+            const ciWeight = 15 + (round - 1) * 10; // 15..55 : 晚期大病風險升高
+            const accidentWeight = 40;
+            let pool;
+            if (roll < ciWeight) pool = ciPool;
+            else if (roll < ciWeight + accidentWeight) pool = accidentPool;
+            else pool = vhisPool;
+            return pool[Math.floor(Math.random() * pool.length)];
         }
 
         function renderConnectedPeersCount(count) {
@@ -1110,11 +1338,7 @@
             const totalCount = allParticipants.length;
             if (totalCount === 0) return;
 
-            let phase = 'lobby';
-            if (document.getElementById('phaseDecision') && !document.getElementById('phaseDecision').classList.contains('hidden')) phase = 'decision';
-            else if (document.getElementById('phaseShop') && !document.getElementById('phaseShop').classList.contains('hidden')) phase = 'shop';
-            else if (document.getElementById('phaseWheel') && !document.getElementById('phaseWheel').classList.contains('hidden')) phase = 'wheel';
-            else if (document.getElementById('phaseResolution') && !document.getElementById('phaseResolution').classList.contains('hidden')) phase = 'resolution';
+            let phase = currentPhase || 'lobby';
 
             stageIndicator.innerText = `Stage: ${phase.toUpperCase()}`;
 
@@ -1236,6 +1460,8 @@
         }
 
         function enterStageA() {
+            currentPhase = 'decision';
+            decisionCommitted = false;
             playerState.money -= 3000; //生存開支扣除
             
             document.getElementById('phaseDecision').classList.remove('hidden');
@@ -1247,13 +1473,16 @@
             document.getElementById('roundTitleText').innerHTML = `${roundInfo.title} <span class="text-slate-400 font-normal">(Age ${roundInfo.ageRange})</span>`;
             document.getElementById('roundIndicator').innerText = `回合：${currentRound} / 5`;
 
-            document.getElementById('optSlaveBtn').className = "w-full text-left bg-white hover:bg-slate-50 border-2 border-[#0F172A] p-4 rounded-2xl flex items-start gap-4 transition group shadow-[3px_3px_0px_0px_#0F172A]";
-            document.getElementById('optChillBtn').className = "w-full text-left bg-white hover:bg-slate-50 border-2 border-[#0F172A] p-4 rounded-2xl flex items-start gap-4 transition group shadow-[3px_3px_0px_0px_#0F172A]";
-            document.getElementById('optBuddhaBtn').className = "w-full text-left bg-white hover:bg-slate-50 border-2 border-[#0F172A] p-4 rounded-2xl flex items-start gap-4 transition group shadow-[3px_3px_0px_0px_#0F172A]";
+            ['optSlaveBtn','optChillBtn','optBuddhaBtn'].forEach(id => {
+                const b = document.getElementById(id);
+                b.className = "w-full text-left bg-white hover:bg-slate-50 border-2 border-[#0F172A] p-4 rounded-2xl flex items-start gap-4 transition group shadow-[3px_3px_0px_0px_#0F172A]";
+                b.style.pointerEvents = 'auto';
+            });
 
             playerState.currentLifeOption = null;
             const confirmBtn = document.getElementById('confirmDecisionBtn');
             confirmBtn.disabled = true;
+            confirmBtn.innerText = '確認投資生活方式';
             confirmBtn.className = "w-full py-4 px-6 rounded-xl font-black uppercase tracking-wider text-sm transition text-slate-400 bg-slate-100 cursor-not-allowed";
 
             renderDashboard();
@@ -1288,6 +1517,7 @@
 
         function confirmStageA() {
             stopPhaseTimer();
+            decisionCommitted = true;
             const opt = playerState.currentLifeOption;
             
             if (opt === 'slave') {
@@ -1321,6 +1551,12 @@
                     health: playerState.health, energy: playerState.energy, money: playerState.money,
                     score: playerState.score, isDead: playerState.isDead, currentLifeOption: playerState.currentLifeOption
                 });
+                // lock the choice and wait for the big screen to advance
+                ['optSlaveBtn','optChillBtn','optBuddhaBtn'].forEach(id => document.getElementById(id).style.pointerEvents = 'none');
+                const cBtn = document.getElementById('confirmDecisionBtn');
+                cBtn.disabled = true;
+                cBtn.innerText = '✓ 已提交，等待大螢幕進入下一階段...';
+                cBtn.className = "w-full py-4 px-6 rounded-xl font-black uppercase tracking-wider text-sm text-emerald-700 bg-emerald-50 border-2 border-emerald-500 cursor-not-allowed";
             }
 
             if (localRole === 'demo') {
@@ -1348,8 +1584,17 @@
         }
 
         function enterStageB() {
+            currentPhase = 'shop';
+            shopCommitted = false;
             document.getElementById('phaseDecision').classList.add('hidden');
             document.getElementById('phaseShop').classList.remove('hidden');
+            document.getElementById('phaseWheel').classList.add('hidden');
+            document.getElementById('phaseResolution').classList.add('hidden');
+
+            const confirmShopBtn = document.getElementById('confirmShopBtn');
+            confirmShopBtn.disabled = false;
+            confirmShopBtn.innerHTML = '配置完成，進入命運考驗 <i class="fa-solid fa-dice-six mr-1"></i>';
+            confirmShopBtn.className = "w-full bg-gradient-to-r from-violet-500 to-indigo-600 text-white font-black py-4 px-6 rounded-xl text-sm uppercase tracking-wider neo-btn";
 
             const mult = AGE_MATRICES[currentRound].multiplier;
             document.getElementById('multiplierText').innerText = `${mult.toFixed(1)}x`;
@@ -1446,6 +1691,7 @@
 
         function confirmStageB() {
             stopPhaseTimer();
+            shopCommitted = true;
             let newlyBought = { vhis: false, accident: false, ci: false };
 
             if (playerState.pendingInsurances.vhis) {
@@ -1469,6 +1715,10 @@
                     money: playerState.money, score: playerState.score,
                     insurances: { vhis: playerState.has_vhis, accident: playerState.has_accident, ci: playerState.has_ci }
                 });
+                const sBtn = document.getElementById('confirmShopBtn');
+                sBtn.disabled = true;
+                sBtn.innerHTML = '✓ 已配置，等待大螢幕引爆命運之輪...';
+                sBtn.className = "w-full py-4 px-6 rounded-xl font-black uppercase tracking-wider text-sm text-emerald-700 bg-emerald-50 border-2 border-emerald-500 cursor-not-allowed";
             }
 
             if (localRole === 'demo') {
@@ -1490,8 +1740,11 @@
         }
 
         function enterStageC() {
+            currentPhase = 'wheel';
+            document.getElementById('phaseDecision').classList.add('hidden');
             document.getElementById('phaseShop').classList.add('hidden');
             document.getElementById('phaseWheel').classList.remove('hidden');
+            document.getElementById('phaseResolution').classList.add('hidden');
 
             const baseRisk = AGE_MATRICES[currentRound].baseRisk;
             let finalAccidentProb = Math.min(100, Math.max(0, Math.round(baseRisk + (100 - playerState.energy) * 0.9)));
@@ -1568,6 +1821,7 @@
         }
 
         function resolveStageC() {
+            currentPhase = 'resolution';
             document.getElementById('phaseWheel').classList.add('hidden');
             document.getElementById('phaseResolution').classList.remove('hidden');
 
@@ -1660,6 +1914,11 @@
 
             if (isMultiplayerMode && localRole === 'player') {
                 db.ref(`rooms/${roomPin}/players/${myPlayerId}`).update({ health: playerState.health, energy: playerState.energy, money: playerState.money, score: playerState.score, isDead: playerState.isDead });
+                // players wait for the host to drive the next round
+                const adv = document.getElementById('advanceBtn');
+                adv.disabled = true;
+                adv.className = "w-full py-4 px-6 rounded-xl font-black uppercase tracking-wider text-sm text-emerald-700 bg-emerald-50 border-2 border-emerald-500 cursor-not-allowed";
+                adv.innerHTML = '<span>等待大螢幕進入下一回合...</span>';
             }
 
             if (localRole === 'demo') {
@@ -1676,6 +1935,7 @@
         }
 
         function advanceRound() {
+            if (localRole === 'player') return; // host drives progression in multiplayer
             if (currentRound >= 5) {
                 triggerEndGame(true, "survived");
                 return;
@@ -1747,7 +2007,11 @@
 
         function resetGame() {
             stopPhaseTimer(); playSuccess();
+            clearInterval(hostTimer); hostPhaseAdvance = null;
             currentRound = 1; activeEvent = null;
+            currentPhase = 'lobby'; lastPhaseKey = '';
+            decisionCommitted = false; shopCommitted = false; joining = false;
+            document.getElementById('hostGameControlPanel').classList.add('hidden');
 
             playerState = {
                 name: playerState.name, health: 100, energy: 100, money: 10000,
@@ -1793,6 +2057,7 @@
         window.selectAppMode = selectAppMode;
         window.joinOrStartGame = joinOrStartGame;
         window.hostStartGame = hostStartGame;
+        window.hostSkipPhase = hostSkipPhase;
         window.hostProgressToStageB = hostProgressToStageB;
         window.hostProgressToStageC = hostProgressToStageC;
         window.spinWheel = spinWheel;
