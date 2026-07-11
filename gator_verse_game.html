@@ -306,11 +306,11 @@
                 <!-- Active Dashboard -->
                 <div class="grid grid-cols-3 gap-3 mb-6 bg-[#FDFBF7] p-4 rounded-2xl border-2 border-[#0F172A] shadow-inner">
                     <!-- Money Card -->
-                    <div class="text-center border-r-2 border-slate-200/80">
+                    <div class="text-center border-r-2 border-slate-200/80 overflow-hidden">
                         <span class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
                             <i class="fa-solid fa-wallet text-amber-500 mr-1"></i> 我的現金
                         </span>
-                        <span id="playerMoneyText" class="text-lg font-black text-slate-800">$10,000</span>
+                        <span id="playerMoneyText" class="block text-sm font-black text-slate-800 leading-tight break-all">$10,000</span>
                     </div>
                     <!-- Health Card -->
                     <div class="text-center border-r-2 border-slate-200/80 px-2">
@@ -330,6 +330,12 @@
                             <span id="playerEnergyText" class="text-lg font-black text-sky-600">100%</span>
                         </div>
                     </div>
+                </div>
+
+                <!-- Active Insurance Status Bar (live indicator of currently held policies) -->
+                <div id="activeInsuranceStatusBar" class="hidden mb-4 bg-emerald-50 border-2 border-emerald-300 p-2.5 rounded-xl flex flex-wrap items-center gap-2">
+                    <span class="text-[10px] font-black text-emerald-700 uppercase tracking-wider"><i class="fa-solid fa-shield-halved mr-1"></i>生效中保單：</span>
+                    <div id="activeInsuranceBadges" class="flex flex-wrap gap-1.5"></div>
                 </div>
 
                 <!-- SCREEN STATE 1: DECISION (STAGE A) -->
@@ -650,21 +656,21 @@
 
                     <!-- Stat breakdown grid -->
                     <div class="grid grid-cols-2 gap-4 font-bold">
-                        <div class="bg-slate-50 border-2 border-[#0F172A] p-4 rounded-2xl shadow-[3px_3px_0px_0px_#0F172A]">
-                            <span class="block text-[10px] text-slate-400 uppercase tracking-wider font-black">最終 Wellness Score</span>
-                            <span id="recapScoreVal" class="text-2xl font-black text-slate-800">89 / 100</span>
+                        <div class="bg-slate-50 border-2 border-[#0F172A] p-3 rounded-2xl shadow-[3px_3px_0px_0px_#0F172A] overflow-hidden">
+                            <span class="block text-[9px] text-slate-400 uppercase tracking-wider font-black">最終 Wellness Score</span>
+                            <span id="recapScoreVal" class="block text-xl font-black text-slate-800 leading-tight">89 / 100</span>
                         </div>
-                        <div class="bg-slate-50 border-2 border-[#0F172A] p-4 rounded-2xl shadow-[3px_3px_0px_0px_#0F172A]">
-                            <span class="block text-[10px] text-slate-400 uppercase tracking-wider font-black">強制醫療次數</span>
-                            <span id="recapHospitalVal" class="text-2xl font-black text-slate-800">0 次</span>
+                        <div class="bg-slate-50 border-2 border-[#0F172A] p-3 rounded-2xl shadow-[3px_3px_0px_0px_#0F172A] overflow-hidden">
+                            <span class="block text-[9px] text-slate-400 uppercase tracking-wider font-black">強制醫療次數</span>
+                            <span id="recapHospitalVal" class="block text-xl font-black text-slate-800 leading-tight">0 次</span>
                         </div>
-                        <div class="bg-slate-50 border-2 border-[#0F172A] p-4 rounded-2xl shadow-[3px_3px_0px_0px_#0F172A]">
-                            <span class="block text-[10px] text-slate-400 uppercase tracking-wider font-black">自費醫療開支</span>
-                            <span id="recapMedicalFeeVal" class="text-2xl font-black text-rose-500">$0</span>
+                        <div class="bg-slate-50 border-2 border-[#0F172A] p-3 rounded-2xl shadow-[3px_3px_0px_0px_#0F172A] overflow-hidden">
+                            <span class="block text-[9px] text-slate-400 uppercase tracking-wider font-black">自費醫療開支</span>
+                            <span id="recapMedicalFeeVal" class="block text-xl font-black text-rose-500 leading-tight break-all">$0</span>
                         </div>
-                        <div class="bg-slate-50 border-2 border-[#0F172A] p-4 rounded-2xl shadow-[3px_3px_0px_0px_#0F172A]">
-                            <span class="block text-[10px] text-slate-400 uppercase tracking-wider font-black">獲得理賠總金額</span>
-                            <span id="recapPayoutVal" class="text-2xl font-black text-emerald-600">$0</span>
+                        <div class="bg-slate-50 border-2 border-[#0F172A] p-3 rounded-2xl shadow-[3px_3px_0px_0px_#0F172A] overflow-hidden">
+                            <span class="block text-[9px] text-slate-400 uppercase tracking-wider font-black">獲得理賠總金額</span>
+                            <span id="recapPayoutVal" class="block text-xl font-black text-emerald-600 leading-tight break-all">$0</span>
                         </div>
                     </div>
 
@@ -675,16 +681,16 @@
                             <span>保費支出 vs 患病支出對比 ⚖️</span>
                         </h4>
                         <div class="grid grid-cols-2 gap-4 font-bold mb-3">
-                            <div class="bg-white border-2 border-[#0F172A] p-3 rounded-2xl text-center shadow-[2px_2px_0px_0px_#0F172A]">
-                                <span class="block text-[10px] text-slate-400 uppercase tracking-wider font-black mb-1">保險累計支出</span>
-                                <span id="recapInsurancePremiumVal" class="text-2xl font-black text-sky-600">$0</span>
+                            <div class="bg-white border-2 border-[#0F172A] p-3 rounded-2xl text-center shadow-[2px_2px_0px_0px_#0F172A] overflow-hidden">
+                                <span class="block text-[9px] text-slate-400 uppercase tracking-wider font-black mb-1">保險累計支出</span>
+                                <span id="recapInsurancePremiumVal" class="block text-lg font-black text-sky-600 leading-tight break-all">$0</span>
                             </div>
-                            <div class="bg-white border-2 border-[#0F172A] p-3 rounded-2xl text-center shadow-[2px_2px_0px_0px_#0F172A]">
-                                <span class="block text-[10px] text-slate-400 uppercase tracking-wider font-black mb-1">患病自費支出</span>
-                                <span id="recapMedicalCompareVal" class="text-2xl font-black text-rose-500">$0</span>
+                            <div class="bg-white border-2 border-[#0F172A] p-3 rounded-2xl text-center shadow-[2px_2px_0px_0px_#0F172A] overflow-hidden">
+                                <span class="block text-[9px] text-slate-400 uppercase tracking-wider font-black mb-1">患病自費支出</span>
+                                <span id="recapMedicalCompareVal" class="block text-lg font-black text-rose-500 leading-tight break-all">$0</span>
                             </div>
                         </div>
-                        <p id="recapInsuranceInsight" class="text-xs text-slate-700 leading-relaxed font-bold bg-white/70 border-2 border-slate-200 rounded-xl p-3"></p>
+                        <p id="recapInsuranceInsight" class="text-[11px] leading-snug text-slate-700 font-bold bg-white/70 border-2 border-slate-200 rounded-xl p-3"></p>
                     </div>
 
                     <!-- O2O Marketing CTA -->
@@ -704,12 +710,6 @@
                     </div>
                 </div>
 
-                <div class="mt-6">
-                    <button onclick="resetGame()"
-                            class="w-full neo-btn bg-[#F4F4F0] text-slate-800 font-black py-4 px-6 rounded-xl text-sm uppercase tracking-wider">
-                        再玩一次，健康逆襲 <i class="fa-solid fa-rotate-right ml-1"></i>
-                    </button>
-                </div>
             </div>
         </section>
     </main>
@@ -1517,7 +1517,6 @@
         function enterStageA() {
             currentPhase = 'decision';
             decisionCommitted = false;
-            playerState.money -= 3000; //生存開支扣除
             
             document.getElementById('phaseDecision').classList.remove('hidden');
             document.getElementById('phaseShop').classList.add('hidden');
@@ -1532,7 +1531,17 @@
                 const b = document.getElementById(id);
                 b.className = "w-full text-left bg-white hover:bg-slate-50 border-2 border-[#0F172A] p-4 rounded-2xl flex items-start gap-4 transition group shadow-[3px_3px_0px_0px_#0F172A]";
                 b.style.pointerEvents = 'auto';
+                b.style.opacity = '1';
             });
+
+            // Visually disable Chill button if not enough money
+            if (playerState.money < CHILL_COST) {
+                const chillBtn = document.getElementById('optChillBtn');
+                chillBtn.style.opacity = '0.45';
+                chillBtn.style.cursor = 'not-allowed';
+                const costLabel = chillBtn.querySelector('.text-rose-500');
+                if (costLabel) costLabel.innerText = `-$${CHILL_COST.toLocaleString()} (現金不足)`;
+            }
 
             playerState.currentLifeOption = null;
             const confirmBtn = document.getElementById('confirmDecisionBtn');
@@ -1554,8 +1563,18 @@
             confirmStageA();
         }
 
+        const CHILL_COST = 8000;
+
         function selectOption(type) {
             playClick();
+
+            // Block Chill if player doesn't have enough money
+            if (type === 'chill' && playerState.money < CHILL_COST) {
+                alert(`❌ 現金不足，無法選擇【Chill 爆】：需要 $${CHILL_COST.toLocaleString()}，目前只有 $${playerState.money.toLocaleString()}`);
+                playFail();
+                return;
+            }
+
             document.getElementById('optSlaveBtn').className = "w-full text-left bg-white border-2 border-[#0F172A] p-4 rounded-2xl flex items-start gap-4 transition group shadow-[3px_3px_0px_0px_#0F172A]";
             document.getElementById('optChillBtn').className = "w-full text-left bg-white border-2 border-[#0F172A] p-4 rounded-2xl flex items-start gap-4 transition group shadow-[3px_3px_0px_0px_#0F172A]";
             document.getElementById('optBuddhaBtn').className = "w-full text-left bg-white border-2 border-[#0F172A] p-4 rounded-2xl flex items-start gap-4 transition group shadow-[3px_3px_0px_0px_#0F172A]";
@@ -1574,20 +1593,27 @@
             stopPhaseTimer();
             decisionCommitted = true;
             const opt = playerState.currentLifeOption;
+
+            // Defensive check: block Chill if insufficient funds (belt-and-suspenders)
+            if (opt === 'chill' && playerState.money < CHILL_COST) {
+                playerState.currentLifeOption = 'timeout_buddha';
+            }
             
-            if (opt === 'slave') {
+            const finalOpt = playerState.currentLifeOption;
+            
+            if (finalOpt === 'slave') {
                 playerState.energy = Math.max(0, playerState.energy - 50);
                 playerState.health = Math.max(0, playerState.health - 30);
                 playerState.money += 12000;
-            } else if (opt === 'chill') {
-                playerState.money -= 8000;
+            } else if (finalOpt === 'chill') {
+                playerState.money -= CHILL_COST;
                 playerState.energy = Math.min(100, playerState.energy + 40);
                 playerState.health = Math.min(100, playerState.health + 15);
-            } else if (opt === 'buddha') {
+            } else if (finalOpt === 'buddha') {
                 playerState.money += 3000;
                 playerState.energy = Math.min(100, playerState.energy + 10);
                 playerState.health = Math.min(100, playerState.health + 5);
-            } else if (opt === 'timeout_buddha') {
+            } else if (finalOpt === 'timeout_buddha') {
                 playerState.energy = Math.min(100, playerState.energy + 10);
                 playerState.health = Math.min(100, playerState.health + 5);
             }
@@ -1618,13 +1644,13 @@
                 peers.forEach(p => {
                     if (p.isDead) return;
                     let pick = p.type === 'yolo' ? (Math.random() > 0.3 ? 'slave' : 'chill') : (Math.random() > 0.5 ? 'buddha' : 'chill');
+                    if (pick === 'chill' && p.money < CHILL_COST) pick = 'buddha';
                     p.currentLifeOption = pick;
-                    p.money -= 3000;
 
                     if (pick === 'slave') {
                         p.energy = Math.max(0, p.energy - 50); p.health = Math.max(0, p.health - 30); p.money += 12000;
                     } else if (pick === 'chill') {
-                        p.money -= 8000; p.energy = Math.min(100, p.energy + 40); p.health = Math.min(100, p.health + 15);
+                        p.money -= CHILL_COST; p.energy = Math.min(100, p.energy + 40); p.health = Math.min(100, p.health + 15);
                     } else {
                         p.money += 3000; p.energy = Math.min(100, p.energy + 10); p.health = Math.min(100, p.health + 5);
                     }
@@ -1888,6 +1914,8 @@
             
             const isProtected = { lucky: true, vhis: playerState.has_vhis, accident: playerState.has_accident, ci: playerState.has_ci }[activeEvent.type];
 
+            console.log(`[RESOLVE] Event: ${activeEvent.type} | has_vhis=${playerState.has_vhis}, has_accident=${playerState.has_accident}, has_ci=${playerState.has_ci} | protected=${isProtected} | money=$${playerState.money}`);
+
             let dHealth = 0, dEnergy = 0, dMoney = 0;
             let triggeredHospital = false;
             let overworkHealthAmplifier = playerState.health < 50 ? 10 : 0;
@@ -2120,7 +2148,9 @@
         }
 
         function renderDashboard() {
-            document.getElementById('playerMoneyText').innerText = `$${playerState.money.toLocaleString()}`;
+            const moneyEl = document.getElementById('playerMoneyText');
+            moneyEl.innerText = `$${playerState.money.toLocaleString()}`;
+            moneyEl.className = playerState.money < 0 ? "block text-sm font-black text-rose-500 leading-tight break-all" : "block text-sm font-black text-slate-800 leading-tight break-all";
             document.getElementById('playerHealthText').innerText = `${playerState.health}%`;
             document.getElementById('playerEnergyText').innerText = `${playerState.energy}%`;
             
@@ -2128,7 +2158,25 @@
             document.getElementById('playerEnergyText').className = playerState.energy < 30 ? "text-lg font-black text-amber-500 animate-pulse" : "text-lg font-black text-sky-600";
 
             playerState.score = calculateWellnessScore(playerState.health, playerState.money, playerState.energy);
+            renderActiveInsurance();
             renderLeaderboard();
+        }
+
+        function renderActiveInsurance() {
+            const bar = document.getElementById('activeInsuranceStatusBar');
+            const badges = document.getElementById('activeInsuranceBadges');
+            if (!bar || !badges) return;
+            const held = [];
+            if (playerState.has_vhis) held.push(`<span class="text-[9px] bg-emerald-100 text-emerald-800 border border-emerald-300 font-black py-0.5 px-2 rounded-full shadow-sm"><i class="fa-solid fa-hospital-user mr-0.5"></i>自願醫保</span>`);
+            if (playerState.has_accident) held.push(`<span class="text-[9px] bg-sky-100 text-sky-800 border border-sky-300 font-black py-0.5 px-2 rounded-full shadow-sm"><i class="fa-solid fa-crutch mr-0.5"></i>意外險</span>`);
+            if (playerState.has_ci) held.push(`<span class="text-[9px] bg-violet-100 text-violet-800 border border-violet-300 font-black py-0.5 px-2 rounded-full shadow-sm"><i class="fa-solid fa-heart-pulse mr-0.5"></i>危疾險</span>`);
+            if (held.length > 0) {
+                bar.classList.remove('hidden');
+                badges.innerHTML = held.join('');
+            } else {
+                bar.classList.add('hidden');
+                badges.innerHTML = '';
+            }
         }
 
         window.selectAppMode = selectAppMode;
