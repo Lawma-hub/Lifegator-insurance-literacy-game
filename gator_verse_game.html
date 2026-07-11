@@ -186,6 +186,15 @@
                     <div id="leaderboardList" class="space-y-2.5"></div>
                 </div>
 
+                <!-- Game Over Players (dead / bankrupt) live display during gameplay -->
+                <div id="hostGameOverPanel" class="bg-rose-50 border-2 border-rose-300 rounded-2xl p-4 mb-4 hidden">
+                    <h3 class="text-xs font-black text-rose-500 uppercase tracking-widest mb-3 flex justify-between">
+                        <span>🏥 已出局 / 進入療養期</span>
+                        <span id="hostGameOverCount" class="text-rose-600">0 人</span>
+                    </h3>
+                    <div id="hostGameOverList" class="flex flex-wrap gap-2"></div>
+                </div>
+
                 <!-- Host Start Game Control (visible in host mode lobby) -->
                 <div id="hostStartPanel" class="mt-4 hidden p-3.5 bg-[#FFFDE7] border-2 border-[#0F172A] rounded-2xl text-left shadow-inner">
                     <span class="block text-[10px] font-black text-amber-700 uppercase tracking-widest mb-2"><i class="fa-solid fa-gears mr-1"></i> 主機房主控盤 (Host Controller)</span>
@@ -659,6 +668,25 @@
                         </div>
                     </div>
 
+                    <!-- Insurance premium vs medical cost comparison -->
+                    <div class="bg-gradient-to-tr from-sky-50 to-emerald-50 border-3 border-[#0F172A] p-5 rounded-3xl shadow-[4px_4px_0px_0px_#0F172A]">
+                        <h4 class="font-black text-slate-800 flex items-center gap-2 text-sm mb-3">
+                            <i class="fa-solid fa-scale-balanced text-sky-600"></i>
+                            <span>保費支出 vs 患病支出對比 ⚖️</span>
+                        </h4>
+                        <div class="grid grid-cols-2 gap-4 font-bold mb-3">
+                            <div class="bg-white border-2 border-[#0F172A] p-3 rounded-2xl text-center shadow-[2px_2px_0px_0px_#0F172A]">
+                                <span class="block text-[10px] text-slate-400 uppercase tracking-wider font-black mb-1">保險累計支出</span>
+                                <span id="recapInsurancePremiumVal" class="text-2xl font-black text-sky-600">$0</span>
+                            </div>
+                            <div class="bg-white border-2 border-[#0F172A] p-3 rounded-2xl text-center shadow-[2px_2px_0px_0px_#0F172A]">
+                                <span class="block text-[10px] text-slate-400 uppercase tracking-wider font-black mb-1">患病自費支出</span>
+                                <span id="recapMedicalCompareVal" class="text-2xl font-black text-rose-500">$0</span>
+                            </div>
+                        </div>
+                        <p id="recapInsuranceInsight" class="text-xs text-slate-700 leading-relaxed font-bold bg-white/70 border-2 border-slate-200 rounded-xl p-3"></p>
+                    </div>
+
                     <!-- O2O Marketing CTA -->
                     <div class="bg-white border-2 border-[#0F172A] p-5 rounded-3xl relative overflow-hidden shadow-[4px_4px_0px_0px_#0F172A]">
                         <h4 class="font-black text-slate-800 flex items-center gap-2 text-sm mb-2">
@@ -732,7 +760,7 @@
         let playerState = {
             name: "健康青年", health: 100, energy: 100, money: 10000,
             has_vhis: false, has_accident: false, has_ci: false, isDead: false, score: 100,
-            payoutCollected: 0, hospitalizedCount: 0, medicalFeesPaid: 0, currentLifeOption: null,
+            payoutCollected: 0, hospitalizedCount: 0, medicalFeesPaid: 0, insurancePremiumsPaid: 0, currentLifeOption: null,
             pendingInsurances: { vhis: false, accident: false, ci: false },
             boughtLastRound: { vhis: false, accident: false, ci: false },
             nextRoundBuffs: { health: 0, energy: 0 }
@@ -1328,6 +1356,33 @@
                         </div>
                     </div>`;
             });
+            renderGameOverPlayers();
+        }
+
+        function renderGameOverPlayers() {
+            const panel = document.getElementById('hostGameOverPanel');
+            const listEl = document.getElementById('hostGameOverList');
+            const countEl = document.getElementById('hostGameOverCount');
+            if (!panel || !listEl || !countEl) return;
+
+            let list = [];
+            if (localRole === 'demo') {
+                list = [{ name: playerState.name, isDead: playerState.isDead }, ...peers];
+            } else {
+                list = peers;
+            }
+            const dead = list.filter(p => p.isDead);
+
+            if (dead.length === 0) {
+                panel.classList.add('hidden');
+                return;
+            }
+            panel.classList.remove('hidden');
+            countEl.innerText = `${dead.length} 人`;
+            listEl.innerHTML = "";
+            dead.forEach(p => {
+                listEl.innerHTML += `<span class="text-[11px] bg-white text-rose-600 border-2 border-rose-300 font-black py-1 px-3 rounded-full shadow-sm line-through"><i class="fa-solid fa-heart-crack mr-1"></i>${p.name}</span>`;
+            });
         }
 
         function updateAggregatedRealtimeStatsPanel() {
@@ -1695,15 +1750,18 @@
             let newlyBought = { vhis: false, accident: false, ci: false };
 
             if (playerState.pendingInsurances.vhis) {
-                playerState.money -= getPremiumCost('vhis'); playerState.has_vhis = true; newlyBought.vhis = true;
+                const c = getPremiumCost('vhis');
+                playerState.money -= c; playerState.insurancePremiumsPaid += c; playerState.has_vhis = true; newlyBought.vhis = true;
             } else playerState.has_vhis = false;
 
             if (playerState.pendingInsurances.accident) {
-                playerState.money -= getPremiumCost('accident'); playerState.has_accident = true; newlyBought.accident = true;
+                const c = getPremiumCost('accident');
+                playerState.money -= c; playerState.insurancePremiumsPaid += c; playerState.has_accident = true; newlyBought.accident = true;
             } else playerState.has_accident = false;
 
             if (playerState.pendingInsurances.ci) {
-                playerState.money -= getPremiumCost('ci'); playerState.has_ci = true; newlyBought.ci = true;
+                const c = getPremiumCost('ci');
+                playerState.money -= c; playerState.insurancePremiumsPaid += c; playerState.has_ci = true; newlyBought.ci = true;
             } else playerState.has_ci = false;
 
             playerState.boughtLastRound = newlyBought;
@@ -1969,6 +2027,24 @@
             document.getElementById('recapMedicalFeeVal').innerText = `$${playerState.medicalFeesPaid.toLocaleString()}`;
             document.getElementById('recapPayoutVal').innerText = `$${playerState.payoutCollected.toLocaleString()}`;
 
+            // Insurance premium vs medical expenditure comparison
+            const prem = playerState.insurancePremiumsPaid || 0;
+            const med = playerState.medicalFeesPaid || 0;
+            document.getElementById('recapInsurancePremiumVal').innerText = `$${prem.toLocaleString()}`;
+            document.getElementById('recapMedicalCompareVal').innerText = `$${med.toLocaleString()}`;
+            let insight = "";
+            if (prem > 0 && med > prem) {
+                const ratio = (med / prem).toFixed(1);
+                insight = `💡 你的自費醫療支出是保費的約 ${ratio} 倍！保險的支出相對於患病時的巨額醫療開支，簡直是小巫見大巫。提前投保才是聪明的風險轉移！`;
+            } else if (prem === 0 && med > 0) {
+                insight = `💡 你全程沒有投保，却自費支付了 $${med.toLocaleString()} 的醫療費用！只要付出一點點保費，就能把這些沉重開支轉嫁給保險公司，避免資產被醫療費吐空。`;
+            } else if (prem > 0 && med === 0) {
+                insight = `💡 你花了 $${prem.toLocaleString()} 保費，全程零自費醫療！保險成功幫你擋下了風險，用小額保費換來安心，這正是保障的價值所在。`;
+            } else {
+                insight = `💡 保費是可控的小額支出，患病或意外却可能帶來難以承受的巨額開支。提前用小錢鎖定保障，才是明智之舉！`;
+            }
+            document.getElementById('recapInsuranceInsight').innerText = insight;
+
             let grade = "C 裸奔常客";
             let desc = "";
 
@@ -2016,7 +2092,7 @@
             playerState = {
                 name: playerState.name, health: 100, energy: 100, money: 10000,
                 has_vhis: false, has_accident: false, has_ci: false, isDead: false, score: 100,
-                payoutCollected: 0, hospitalizedCount: 0, medicalFeesPaid: 0, currentLifeOption: null,
+                payoutCollected: 0, hospitalizedCount: 0, medicalFeesPaid: 0, insurancePremiumsPaid: 0, currentLifeOption: null,
                 pendingInsurances: { vhis: false, accident: false, ci: false },
                 boughtLastRound: { vhis: false, accident: false, ci: false }, nextRoundBuffs: { health: 0, energy: 0 }
             };
@@ -2026,6 +2102,7 @@
 
             document.getElementById('gameOverScreen').classList.add('hidden');
             document.getElementById('setupScreen').classList.remove('hidden');
+            document.getElementById('hostGameOverPanel').classList.add('hidden');
             document.getElementById('wheelGraphic').style.transform = `rotate(0deg)`;
             document.getElementById('wheelStatusText').innerText = "命運之輪就緒";
 
