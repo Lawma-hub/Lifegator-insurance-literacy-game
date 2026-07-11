@@ -678,7 +678,7 @@
                     <div class="bg-gradient-to-tr from-sky-50 to-emerald-50 border-3 border-[#0F172A] p-5 rounded-3xl shadow-[4px_4px_0px_0px_#0F172A]">
                         <h4 class="font-black text-slate-800 flex items-center gap-2 text-sm mb-3">
                             <i class="fa-solid fa-scale-balanced text-sky-600"></i>
-                            <span>保費支出 vs 患病支出對比 ⚖️</span>
+                            <span>保費支出 vs 無保患病風險對比 ⚖️</span>
                         </h4>
                         <div class="grid grid-cols-2 gap-4 font-bold mb-3">
                             <div class="bg-white border-2 border-[#0F172A] p-3 rounded-2xl text-center shadow-[2px_2px_0px_0px_#0F172A] overflow-hidden">
@@ -686,7 +686,7 @@
                                 <span id="recapInsurancePremiumVal" class="block text-lg font-black text-sky-600 leading-tight break-all">$0</span>
                             </div>
                             <div class="bg-white border-2 border-[#0F172A] p-3 rounded-2xl text-center shadow-[2px_2px_0px_0px_#0F172A] overflow-hidden">
-                                <span class="block text-[9px] text-slate-400 uppercase tracking-wider font-black mb-1">患病自費支出</span>
+                                <span class="block text-[9px] text-rose-500 uppercase tracking-wider font-black mb-1">無保預期患病支出</span>
                                 <span id="recapMedicalCompareVal" class="block text-lg font-black text-rose-500 leading-tight break-all">$0</span>
                             </div>
                         </div>
@@ -760,7 +760,7 @@
         let playerState = {
             name: "健康青年", health: 100, energy: 100, money: 10000,
             has_vhis: false, has_accident: false, has_ci: false, isDead: false, score: 100,
-            payoutCollected: 0, hospitalizedCount: 0, medicalFeesPaid: 0, insurancePremiumsPaid: 0, currentLifeOption: null,
+            payoutCollected: 0, hospitalizedCount: 0, medicalFeesPaid: 0, insurancePremiumsPaid: 0, uninsuredMedicalExposure: 0, currentLifeOption: null,
             pendingInsurances: { vhis: false, accident: false, ci: false },
             boughtLastRound: { vhis: false, accident: false, ci: false },
             nextRoundBuffs: { health: 0, energy: 0 }
@@ -1916,6 +1916,20 @@
 
             console.log(`[RESOLVE] Event: ${activeEvent.type} | has_vhis=${playerState.has_vhis}, has_accident=${playerState.has_accident}, has_ci=${playerState.has_ci} | protected=${isProtected} | money=$${playerState.money}`);
 
+            // Accumulate "uninsured expected medical exposure" for this round.
+            // This represents the statistical risk the player was exposed to, regardless of actual outcome.
+            // It's used in the recap to compare with insurance premiums ("小巫見大巫" contrast).
+            const baseRiskForExposure = AGE_MATRICES[currentRound].baseRisk;
+            const accidentProb = Math.min(100, Math.max(0, baseRiskForExposure + (100 - playerState.energy) * 0.9)) / 100;
+            const illnessProb = Math.min(100, Math.max(0, baseRiskForExposure + (100 - playerState.health) * 1.0)) / 100;
+            const ciProb = illnessProb * (playerState.health < 45 ? 0.6 : 0.25);
+            const vhisProb = Math.max(0, illnessProb - ciProb);
+            playerState.uninsuredMedicalExposure += Math.round(
+                accidentProb * 4000 +   // accident base cost
+                vhisProb * 6000 +       // VHIS base cost
+                ciProb * 15000          // CI base cost
+            );
+
             let dHealth = 0, dEnergy = 0, dMoney = 0;
             let triggeredHospital = false;
             let overworkHealthAmplifier = playerState.health < 50 ? 10 : 0;
@@ -2055,21 +2069,24 @@
             document.getElementById('recapMedicalFeeVal').innerText = `$${playerState.medicalFeesPaid.toLocaleString()}`;
             document.getElementById('recapPayoutVal').innerText = `$${playerState.payoutCollected.toLocaleString()}`;
 
-            // Insurance premium vs medical expenditure comparison
+            // Insurance premium vs expected uninsured medical exposure comparison
+            // "小巫見大巫": premiums should look small compared to the potential medical burden
             const prem = playerState.insurancePremiumsPaid || 0;
-            const med = playerState.medicalFeesPaid || 0;
+            const exposure = playerState.uninsuredMedicalExposure || 0;
             document.getElementById('recapInsurancePremiumVal').innerText = `$${prem.toLocaleString()}`;
-            document.getElementById('recapMedicalCompareVal').innerText = `$${med.toLocaleString()}`;
+            document.getElementById('recapMedicalCompareVal').innerText = `$${exposure.toLocaleString()}`;
             let insight = "";
-            if (prem > 0 && med > prem) {
-                const ratio = (med / prem).toFixed(1);
-                insight = `💡 你的自費醫療支出是保費的約 ${ratio} 倍！保險的支出相對於患病時的巨額醫療開支，簡直是小巫見大巫。提前投保才是聪明的風險轉移！`;
-            } else if (prem === 0 && med > 0) {
-                insight = `💡 你全程沒有投保，却自費支付了 $${med.toLocaleString()} 的醫療費用！只要付出一點點保費，就能把這些沉重開支轉嫁給保險公司，避免資產被醫療費吐空。`;
-            } else if (prem > 0 && med === 0) {
-                insight = `💡 你花了 $${prem.toLocaleString()} 保費，全程零自費醫療！保險成功幫你擋下了風險，用小額保費換來安心，這正是保障的價值所在。`;
+            if (prem > 0 && exposure > 0 && exposure > prem) {
+                const ratio = (exposure / prem).toFixed(1);
+                insight = `💡 你在10年間的保險支出僅 $${prem.toLocaleString()}，但你所面對的潛在患病風險高達 $${exposure.toLocaleString()}——是保費的約 ${ratio} 倍！用小額可控的保費，轉嫁巨額的醫療負擔，這就是保險「小巫見大巫」的真正價值。`;
+            } else if (prem > 0 && exposure > 0) {
+                insight = `💡 你的保費支出 $${prem.toLocaleString()} 面對的潛在患病風險為 $${exposure.toLocaleString()}。保費雖小，却能持續抵禦每一年的醫療風險，是長遠穩定的風險轉移工具。`;
+            } else if (prem === 0 && exposure > 0) {
+                insight = `💡 你全程沒有投保，但你面對的潛在患病風險高達 $${exposure.toLocaleString()}！一旦真的中招，這筆巨額支出將直接重創你的資產。只要付出少許保費，就能把這座大山轉嫁給保險公司。`;
+            } else if (prem > 0 && exposure === 0) {
+                insight = `💡 你花了 $${prem.toLocaleString()} 保費，全程幸運地沒有遭遇任何患病或意外風險。保險就像備用傘——用得上時是救星，用不上時是安心。`;
             } else {
-                insight = `💡 保費是可控的小額支出，患病或意外却可能帶來難以承受的巨額開支。提前用小錢鎖定保障，才是明智之舉！`;
+                insight = `💡 保費是可控的小額支出，患病或意外卻可能帶來難以承受的巨額開支。提前用小錢鎖定保障，才是明智之舉！`;
             }
             document.getElementById('recapInsuranceInsight').innerText = insight;
 
@@ -2120,7 +2137,7 @@
             playerState = {
                 name: playerState.name, health: 100, energy: 100, money: 10000,
                 has_vhis: false, has_accident: false, has_ci: false, isDead: false, score: 100,
-                payoutCollected: 0, hospitalizedCount: 0, medicalFeesPaid: 0, insurancePremiumsPaid: 0, currentLifeOption: null,
+                payoutCollected: 0, hospitalizedCount: 0, medicalFeesPaid: 0, insurancePremiumsPaid: 0, uninsuredMedicalExposure: 0, currentLifeOption: null,
                 pendingInsurances: { vhis: false, accident: false, ci: false },
                 boughtLastRound: { vhis: false, accident: false, ci: false }, nextRoundBuffs: { health: 0, energy: 0 }
             };
