@@ -1252,7 +1252,7 @@
             const label = ev.type === 'lucky' ? `命運宣告：${ev.title}` : `命運宣告：${ev.title}`;
             const nextLabel = currentRound >= 5 ? '<i class="fa-solid fa-flag-checkered mr-1"></i> 公佈最終成績' : '<i class="fa-solid fa-forward mr-1"></i> 邁向下一回合';
             hostSetControls(label, nextLabel, true);
-            hostSetTimer(8, hostAdvanceRound);
+            hostSetTimer(15, hostAdvanceRound);
         }
 
         function hostAdvanceRound() {
