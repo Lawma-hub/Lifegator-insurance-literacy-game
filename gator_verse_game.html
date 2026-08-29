@@ -678,7 +678,7 @@
                     <div class="bg-gradient-to-tr from-sky-50 to-emerald-50 border-3 border-[#0F172A] p-5 rounded-3xl shadow-[4px_4px_0px_0px_#0F172A]">
                         <h4 class="font-black text-slate-800 flex items-center gap-2 text-sm mb-3">
                             <i class="fa-solid fa-scale-balanced text-sky-600"></i>
-                            <span>保費支出 vs 無保患病風險對比 ⚖️</span>
+                            <span>保費支出 vs 無保險患病風險對比 ⚖️</span>
                         </h4>
                         <div class="grid grid-cols-2 gap-4 font-bold mb-3">
                             <div class="bg-white border-2 border-[#0F172A] p-3 rounded-2xl text-center shadow-[2px_2px_0px_0px_#0F172A] overflow-hidden">
@@ -686,7 +686,7 @@
                                 <span id="recapInsurancePremiumVal" class="block text-lg font-black text-sky-600 leading-tight break-all">$0</span>
                             </div>
                             <div class="bg-white border-2 border-[#0F172A] p-3 rounded-2xl text-center shadow-[2px_2px_0px_0px_#0F172A] overflow-hidden">
-                                <span class="block text-[9px] text-rose-500 uppercase tracking-wider font-black mb-1">無保預期患病支出</span>
+                                <span class="block text-[9px] text-rose-500 uppercase tracking-wider font-black mb-1">無保險預期患病支出</span>
                                 <span id="recapMedicalCompareVal" class="block text-lg font-black text-rose-500 leading-tight break-all">$0</span>
                             </div>
                         </div>
@@ -1194,14 +1194,14 @@
             currentPhase = 'decision';
             hostBroadcast({ phase: 'decision', currentRound: currentRound, activeEvent: null });
             hostSetControls(`階段 A：投資自己 (回合 ${currentRound}/5)`, '<i class="fa-solid fa-forward mr-1"></i> 進入保險市集 (Stage B)', true);
-            hostSetTimer(20, hostRunShopPhase);
+            hostSetTimer(40, hostRunShopPhase);
         }
 
         function hostRunShopPhase() {
             currentPhase = 'shop';
             hostBroadcast({ phase: 'shop' });
             hostSetControls('階段 B：Lifegator 保險市集', '<i class="fa-solid fa-forward mr-1"></i> 進入命運之輪 (Stage C)', true);
-            hostSetTimer(20, hostRunWheelPhase);
+            hostSetTimer(40, hostRunWheelPhase);
         }
 
         function hostRunWheelPhase() {
@@ -1238,7 +1238,7 @@
             const label = ev.type === 'lucky' ? `命運宣告：${ev.title}` : `命運宣告：${ev.title}`;
             const nextLabel = currentRound >= 5 ? '<i class="fa-solid fa-flag-checkered mr-1"></i> 公佈最終成績' : '<i class="fa-solid fa-forward mr-1"></i> 邁向下一回合';
             hostSetControls(label, nextLabel, true);
-            hostSetTimer(15, hostAdvanceRound);
+            hostSetTimer(40, hostAdvanceRound);
         }
 
         function hostAdvanceRound() {
