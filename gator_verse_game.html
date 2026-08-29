@@ -613,7 +613,7 @@
                             <div id="insuranceBuffSummary" class="bg-emerald-50 border-2 border-emerald-500 p-4 rounded-2xl shadow-[3px_3px_0px_0px_rgba(16,185,129,0.3)] hidden">
                                 <div class="flex items-center gap-2 text-emerald-700 mb-1">
                                     <i class="fa-solid fa-wand-magic-sparkles text-sm"></i>
-                                    <span class="text-xs font-black uppercase tracking-wider">Lifegator 快速康復保障已激活</span>
+                                    <span class="text-xs font-black uppercase tracking-wider">快速康復保障已激活</span>
                                 </div>
                                 <p class="text-xs text-slate-700 leading-relaxed font-bold">
                                     因為你在本回合做對了健康保險決策。下回合開始時，你將自動獲得<b>各 +20% 的健康與精力快速康復</b>！
@@ -693,21 +693,7 @@
                         <p id="recapInsuranceInsight" class="text-[11px] leading-snug text-slate-700 font-bold bg-white/70 border-2 border-slate-200 rounded-xl p-3"></p>
                     </div>
 
-                    <!-- O2O Marketing CTA -->
-                    <div class="bg-white border-2 border-[#0F172A] p-5 rounded-3xl relative overflow-hidden shadow-[4px_4px_0px_0px_#0F172A]">
-                        <h4 class="font-black text-slate-800 flex items-center gap-2 text-sm mb-2">
-                            <i class="fa-solid fa-share-nodes text-[#2E7D32]"></i>
-                            <span>一鍵分享領取免費 Wellness 獎賞 🎁</span>
-                        </h4>
-                        <p class="text-slate-500 text-xs leading-relaxed mb-4 font-bold">
-                            複製你的健康報告摘要，在 IG/Threads 分享，Tag @Lifegator，即可免費兌換健康能量飲品券！
-                        </p>
-                        <div class="bg-[#FDFBF7] p-3 rounded-xl border-2 border-slate-200 text-[10px] font-mono text-[#2E7D32] break-words mb-3 shadow-inner" id="wrappedCopyText"></div>
-                        <button onclick="copyToClipboard()"
-                                class="w-full neo-btn bg-emerald-600 text-white font-black py-2.5 px-4 rounded-xl text-xs">
-                            <i class="fa-solid fa-copy mr-1"></i> 複製分享代碼
-                        </button>
-                    </div>
+
                 </div>
 
             </div>
@@ -1944,7 +1930,7 @@
                     if (isProtected) {
                         dHealth = -(10 + overworkHealthAmplifier); dEnergy = -(10 + overworkEnergyAmplifier);
                         memeBox.className = "p-4 rounded-2xl bg-emerald-50 border-2 border-emerald-500 text-emerald-800 font-bold text-xs text-left shadow-sm";
-                        memeBox.innerHTML = `🛡️ <b>自願醫保理賠成功！</b><br>${activeEvent.desc} 私家醫院看病花銷由 Lifegator 全數理賠！下回合享康復 Buff！`;
+                        memeBox.innerHTML = `🛡️ <b>自願醫保理賠成功！</b><br>${activeEvent.desc} 私家醫院看病花銷由保險公司全數理賠！下回合享康復 Buff！`;
                         playerState.payoutCollected += 6000; playerState.nextRoundBuffs = { health: 20, energy: 20 };
                     } else {
                         dHealth = -(30 + overworkHealthAmplifier); dEnergy = -(30 + overworkEnergyAmplifier); dMoney = -6000;
@@ -2096,12 +2082,12 @@
             if (!survived) {
                 playFail();
                 grade = "🏥 進入療養院休整";
-                desc = "你的人生在拼搏中健康或精力不幸超載歸零。因為連續當奴工通宵卻缺少了相應的醫療或意外險，當風險來臨被迫自費看病耗光資產。下次請記住，Lifegator 才是你打拼路上的黃金血包！";
+                desc = "身體健康才是你打拼路上的黃金血包！";
             } else {
                 playSuccess();
                 if (finalScore >= 80) {
                     grade = "👑 A+ 青春 Wellness 達人";
-                    desc = "極致的風險管理大師！你在瘋狂爆肝和補狀態中游刃有餘，並且利用 Lifegator 提前投保鎖定折扣，把所有意外大病威脅消弭於無形。你成功逆襲了人生！";
+                    desc = "極致的風險管理大師！你在瘋狂爆肝和補狀態中游刃有餘，並且利用 Lifegator 提前做好保障配對，投保鎖定折扣，把所有意外大病威脅消弭於無形。你成功逆襲了人生！";
                 } else if (finalScore >= 50) {
                     grade = "🏃 B 穩健生存青年";
                     desc = "恭喜你！雖然中途遭遇了幾次意外被扣除了資產，但依靠基礎防護你依舊生存。若想活得更富有，下次保險策略一定要提前續保鎖定折扣！";
@@ -2113,17 +2099,6 @@
 
             document.getElementById('recapScoreGrade').innerText = grade;
             document.getElementById('recapDescription').innerText = desc;
-
-            const shareText = `【Gator-VERSE 青春健康10年挑戰】\n我扮演的 [${playerState.name}] 最終 Wellness 得分：${finalScore} 分！\n獲得評級：${grade}！\n理賠總計：$${playerState.payoutCollected.toLocaleString()}！\n快來 Lifegator.net 一起體驗！`;
-            document.getElementById('wrappedCopyText').innerText = shareText;
-        }
-
-        function copyToClipboard() {
-            const codeText = document.getElementById('wrappedCopyText').innerText;
-            const textarea = document.createElement("textarea");
-            textarea.value = codeText; document.body.appendChild(textarea);
-            textarea.select(); document.execCommand('copy'); document.body.removeChild(textarea);
-            playSuccess(); alert("📋 分享代碼已成功複製到剪貼簿！");
         }
 
         function resetGame() {
@@ -2209,7 +2184,6 @@
         window.selectOption = selectOption;
         window.confirmStageA = confirmStageA;
         window.confirmStageB = confirmStageB;
-        window.copyToClipboard = copyToClipboard;
         window.toggleMute = toggleMute;
 
         window.onload = function() {
