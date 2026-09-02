@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="zh-HK" class="dark h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>保險通識工作坊 • 賽後檢討與風險防禦評估</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Tailwind Config for Cyberpunk Gen-Z Theme -->
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              bg: '#0A0B10',
+              card: '#121520',
+              border: '#23283B',
+              neonGreen: '#00FF9D',
+              neonCyan: '#00F0FF',
+              neonPink: '#FF007A',
+              neonYellow: '#FFE600',
+              muted: '#8A94B2'
+            }
+          },
+          fontFamily: {
+            sans: ['Space Grotesk', 'Noto Sans HK', 'Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace']
+          },
+          boxShadow: {
+            'neon-green': '0 0 20px rgba(0, 255, 157, 0.35)',
+            'neon-cyan': '0 0 20px rgba(0, 240, 255, 0.35)',
+            'neon-pink': '0 0 20px rgba(255, 0, 122, 0.35)',
+            'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.37)'
+          }
+        }
+      }
+    }
+  </script>
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Noto+Sans+HK:wght@400;500;700;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Canvas Confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <!-- html2canvas for IG Story Download -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+  <style>
+    body {
+      font-family: 'Space Grotesk', 'Noto Sans HK', sans-serif;
+      background-color: #0A0B10;
+      color: #F3F4F6;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .glow-bg {
+      background: radial-gradient(circle at 50% 10%, rgba(0, 240, 255, 0.12) 0%, rgba(255, 0, 122, 0.05) 50%, rgba(10, 11, 16, 0) 100%);
+    }
+    .hotspot-pulse {
+      animation: pulse-ring 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    @keyframes pulse-ring {
+      0%, 100% { transform: scale(1); opacity: 0.9; }
+      50% { transform: scale(1.15); opacity: 0.4; }
+    }
+    .glass-card {
+      background: rgba(18, 21, 32, 0.75);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #0A0B10;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #23283B;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body class="h-full flex flex-col justify-between overflow-x-hidden glow-bg">
+
+  <!-- Mobile Wrapper Container -->
+  <div class="w-full max-w-md mx-auto min-h-full flex flex-col justify-between p-4 relative">
+
+    <!-- Top Navigation Header -->
+    <header class="flex items-center justify-between py-3 mb-2 border-b border-brand-border/40">
+      <div class="flex items-center space-x-2">
+        <div class="w-2.5 h-2.5 rounded-full bg-brand-neonGreen animate-pulse"></div>
+        <span class="font-mono text-xs tracking-wider uppercase text-brand-muted">賽後檢討 • Debriefing</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <div class="px-2.5 py-1 rounded-full bg-brand-card border border-brand-border text-xs font-mono text-brand-neonCyan">
+          階段 <span id="current-step-num">1</span>/4
+        </div>
+      </div>
+    </header>
+
+    <!-- Progress Indicator Bar -->
+    <div class="w-full bg-brand-card h-1.5 rounded-full mb-6 overflow-hidden flex">
+      <div id="progress-bar" class="h-full bg-gradient-to-r from-brand-neonCyan via-brand-neonGreen to-brand-neonPink transition-all duration-500 rounded-full" style="width: 25%;"></div>
+    </div>
+
+    <!-- MAIN CONTENT CONTAINER (Dynamic Step Rendering) -->
+    <main id="app-container" class="flex-grow flex flex-col justify-center my-auto">
+      
+      <!-- ================= STEP 1: REALITY CHECK & RISK SCORE ================= -->
+      <section id="step-1" class="step-content space-y-6">
+        <div class="text-center space-y-2">
+          <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-neonCyan/10 border border-brand-muted/30 text-brand-muted text-xs font-mono mb-1">
+            <i data-lucide="shield-alert" class="w-3.5 h-3.5"></i> 階段 1：現實檢驗
+          </div>
+          <h1 class="text-2xl font-bold tracking-tight text-black">遊戲開局輸咗可以 Re-open，現實世界爆煲點算？ 🎲</h1>
+          <p class="text-sm text-brand-muted">剛才玩完桌遊，你係靠實力贏，定係撞正意外張牌被扣到破產？</p>
+        </div>
+
+        <div class="glass-card rounded-2xl p-5 space-y-5">
+          <!-- Q1 -->
+          <div class="space-y-3">
+            <label class="block text-sm font-semibold text-gray-200">
+              1. 剛才遊戲中撞正意外/疾病出現，受到財務懲罰的時候你在想甚麼？
+            </label>
+            <div class="grid grid-cols-2 gap-3">
+              <button onclick="selectQ1('luck', this)" class="q1-btn p-3 text-left rounded-xl border border-brand-border bg-brand-bg/50 hover:border-brand-neonCyan transition-all flex flex-col justify-between h-20 text-xs font-medium">
+                <span class="text-lg">🎲</span>
+                <span>純粹命仔唔好，跌咗落遊戲陷阱</span>
+              </button>
+              <button onclick="selectQ1('strategy', this)" class="q1-btn p-3 text-left rounded-xl border border-brand-border bg-brand-bg/50 hover:border-brand-neonCyan transition-all flex flex-col justify-between h-20 text-xs font-medium">
+                <span class="text-lg">🧠</span>
+                <span>現實寫照！我平時都係零防護裸奔 </span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Q2 -->
+          <div class="space-y-3">
+            <label class="block text-sm font-semibold text-gray-200">
+              2. 若明日現實突然收到 HK$100,000 私家醫院帳單，你嘅流動資金狀態係...
+            </label>
+            <div class="space-y-2">
+              <button onclick="selectQ2(10, this)" class="q2-btn w-full p-3 text-left rounded-xl border border-brand-border bg-brand-bg/50 hover:border-brand-neonPink transition-all text-xs flex justify-between items-center">
+                <span>💸 &lt; 1 個月（即時爆煲破產）</span>
+                <span class="font-mono text-brand-neonPink text-xs font-bold">即時 Game Over，要靠屋企人救命</span>
+              </button>
+              <button onclick="selectQ2(40, this)" class="q2-btn w-full p-3 text-left rounded-xl border border-brand-border bg-brand-bg/50 hover:border-brand-neonPink transition-all text-xs flex justify-between items-center">
+                <span>⚡ 3 個月緊急備用金（傷及元氣）</span>
+                <span class="font-mono text-brand-neonYellow text-xs">血量直接扣 80%，幾年積蓄歸零</span>
+              </button>
+              <button onclick="selectQ2(80, this)" class="q2-btn w-full p-3 text-left rounded-xl border border-brand-border bg-brand-bg/50 hover:border-brand-neonPink transition-all text-xs flex justify-between items-center">
+                <span>🛡️ 6 個月以上穩健儲蓄（安全度過）</span>
+                <span class="font-mono text-brand-neonGreen text-xs">擋得住一次，但心口都好痛</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dynamic Output Rating Box -->
+        <div id="rating-output-box" class="hidden glass-card rounded-2xl p-4 border border-brand-neonCyan/40 bg-brand-card/90 space-y-2 animate-fade-in">
+          <div class="flex items-center justify-between">
+            <span class="text-xs text-brand-muted uppercase font-mono tracking-wider">估算防禦級別：</span>
+            <span id="defense-badge" class="px-2 py-0.5 rounded text-xs font-bold font-mono uppercase bg-brand-neonPink text-black">紙紮防護罩 💀</span>
+          </div>
+          <p id="defense-desc" class="text-xs text-gray-300">現實世界無 Re-open 鍵，一張私家醫院帳單就可以令你幾年 Working Holiday 兼職積蓄一次過清零。</p>
+        </div>
+
+        <button id="step1-next-btn" disabled onclick="goToStep(2)" class="w-full py-4 rounded-xl bg-gray-800 text-gray-500 font-bold text-sm tracking-wide uppercase transition-all flex items-center justify-center gap-2 cursor-not-allowed">
+          <span>鎖定結果 • 進入下一步</span>
+          <i data-lucide="arrow-right" class="w-4 h-4"></i>
+        </button>
+      </section>
+
+      <!-- ================= STEP 2: SPOT THE FINE PRINT CHALLENGE ================= -->
+      <section id="step-2" class="step-content hidden space-y-5">
+        <div class="text-center space-y-1">
+          <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-neonYellow/10 border border-brand-neonYellow/30 text-brand-muted text-xs font-mono mb-1">
+            <i data-lucide="search" class="w-3.5 h-3.5"></i> 階段 2：魔鬼細節大偵探 —— 破解「平嘢冇好」陷阱
+          </div>
+          <h2 class="text-xl font-bold text-black">網上比價好便宜？小心買咗「裝飾用保單」！</h2>
+          <p class="text-xs text-brand-muted">有些保單每個月比一杯星巴克還便宜，但出事時才發現「這不賠、那不賠」。 <span class="text-brand-neonPink font-semibold">3 個閃爍陷阱</span>！</p>
+        </div>
+
+        <!-- Cards Container -->
+        <div class="space-y-4">
+          
+          <!-- Plan A Card (The Trap) -->
+          <div class="glass-card rounded-2xl p-4 border-2 border-brand-neonPink/60 relative overflow-hidden bg-gradient-to-br from-brand-card to-brand-bg">
+            <div class="absolute top-0 right-0 bg-brand-neonPink text-black font-mono text-[10px] font-bold px-3 py-0.5 rounded-bl-lg">
+              超抵平保單？
+            </div>
+            
+            <div class="flex justify-between items-start mb-3">
+              <div>
+                <h3 class="font-bold text-base text-white">Plan A：「至抵玩新手醫療保」</h3>
+                <span class="text-xs text-brand-muted">目標對象：剛畢業大專生</span>
+              </div>
+              <div class="text-right">
+                <span class="text-lg font-mono font-bold text-brand-neonGreen">HK$180</span>
+                <span class="text-[10px] text-brand-muted block">/ 每月</span>
+              </div>
+            </div>
+
+            <!-- Card Specs & Hotspots -->
+            <div class="space-y-2 text-xs">
+              
+              <!-- Hotspot 1: Deductible -->
+              <div onclick="triggerHotspot(1)" id="hotspot-1" class="relative p-2.5 rounded-xl bg-brand-bg/80 border border-brand-neonPink/40 cursor-pointer hover:bg-brand-neonPink/10 transition-all flex justify-between items-center group">
+                <div>
+                  <span class="text-gray-400 block text-[10px]">每年自負額 (墊底費 / Self-Pay)</span>
+                  <span class="font-mono font-bold text-brand-neonPink">HK$50,000 需自付</span>
+                </div>
+                <div class="w-6 h-6 rounded-full bg-brand-neonPink/20 text-brand-neonPink flex items-center justify-center font-bold text-xs hotspot-pulse group-hover:scale-110">
+                  <span id="spot-1-icon">🔍</span>
+                </div>
+              </div>
+
+              <!-- Hotspot 2: Exclusion -->
+              <div onclick="triggerHotspot(2)" id="hotspot-2" class="relative p-2.5 rounded-xl bg-brand-bg/80 border border-brand-neonPink/40 cursor-pointer hover:bg-brand-neonPink/10 transition-all flex justify-between items-center group">
+                <div>
+                  <span class="text-gray-400 block text-[10px]">專科及手術費保障條款</span>
+                  <span class="font-mono font-bold text-brand-neonPink">50% 共同保險 (Co-insurance)</span>
+                </div>
+                <div class="w-6 h-6 rounded-full bg-brand-neonPink/20 text-brand-neonPink flex items-center justify-center font-bold text-xs hotspot-pulse group-hover:scale-110">
+                  <span id="spot-2-icon">🔍</span>
+                </div>
+              </div>
+
+              <!-- Hotspot 3: Waiting Period -->
+              <div onclick="triggerHotspot(3)" id="hotspot-3" class="relative p-2.5 rounded-xl bg-brand-bg/80 border border-brand-neonPink/40 cursor-pointer hover:bg-brand-neonPink/10 transition-all flex justify-between items-center group">
+                <div>
+                  <span class="text-gray-400 block text-[10px]">未知已知疾病 / 等候期條款</span>
+                  <span class="font-mono font-bold text-brand-neonPink">180 天超長等候期</span>
+                </div>
+                <div class="w-6 h-6 rounded-full bg-brand-neonPink/20 text-brand-neonPink flex items-center justify-center font-bold text-xs hotspot-pulse group-hover:scale-110">
+                  <span id="spot-3-icon">🔍</span>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Plan B Card (Solid Alternative) -->
+          <div class="glass-card rounded-2xl p-4 border border-brand-border opacity-75">
+            <div class="flex justify-between items-start mb-2">
+              <div>
+                <h3 class="font-bold text-sm text-gray-200">Plan B：標準 VHIS 自願醫保</h3>
+                <span class="text-[10px] text-brand-muted">政府認可標準計劃</span>
+              </div>
+              <div class="text-right">
+                <span class="text-sm font-mono font-bold text-white">HK$420</span>
+                <span class="text-[10px] text-brand-muted block">/ 每月</span>
+              </div>
+            </div>
+            <div class="grid grid-cols-3 gap-2 text-[10px] text-gray-300 font-mono text-center pt-1 border-t border-brand-border/40">
+              <div class="bg-brand-bg p-1.5 rounded">自負額：$0</div>
+              <div class="bg-brand-bg p-1.5 rounded">賠償率：全數保障</div>
+              <div class="bg-brand-bg p-1.5 rounded">可扣稅優惠</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Fine Print Takeaway Banner Modal -->
+        <div id="hotspot-modal" class="hidden glass-card p-4 rounded-xl border border-brand-neonYellow bg-brand-card/95 space-y-2 animate-bounce-short">
+          <div class="flex items-center gap-2 text-brand-neonYellow font-bold text-xs">
+            <i data-lucide="alert-triangle" class="w-4 h-4"></i>
+            <span id="modal-title">破解魔鬼細節！</span>
+          </div>
+          <p id="modal-body" class="text-xs text-gray-200">頭 5 萬塊醫院帳單要你自己掏腰包！如果你住院只花了 4 萬，這張保單等同於 0 作用。</p>
+        </div>
+
+        <button id="step2-next-btn" disabled onclick="goToStep(3)" class="w-full py-4 rounded-xl bg-gray-800 text-gray-500 font-bold text-sm tracking-wide uppercase transition-all flex items-center justify-center gap-2 cursor-not-allowed">
+          <span>已拆解陷阱 (<span id="traps-found-count">0</span>/3)</span>
+          <i data-lucide="arrow-right" class="w-4 h-4"></i>
+        </button>
+      </section>
+
+      <!-- ================= STEP 3: LIFE STAGE MATCHMAKER ================= -->
+      <section id="step-3" class="step-content hidden space-y-5">
+        <div class="text-center space-y-1">
+          <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-neonGreen/10 border border-brand-neonGreen/30 text-brand-muted text-xs font-mono mb-1">
+            <i data-lucide="users" class="w-3.5 h-3.5"></i> 階段 3：人生階段精準配對 —— 拒絕「人買我買」🎯
+          </div>
+          <h2 class="text-xl font-bold text-black">不做被推銷的「肥羊」！30 秒幫不同角色點對天賦</h2>
+          <p class="text-xs text-brand-muted">為以下 3 個典型香港人設，選出 <span class="text-brand-neonGreen font-semibold">#1 最迫切保障</span>！</p>
+        </div>
+
+        <!-- Persona Match Cards -->
+        <div id="matchmaker-container" class="space-y-4">
+          
+          <!-- Persona 1 -->
+          <div class="glass-card rounded-2xl p-4 border border-brand-border space-y-3" id="persona-card-0">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-purple-500 to-pink-500 flex items-center justify-center text-lg">🎨</div>
+              <div>
+                <h3 class="font-bold text-sm text-white">Alex, 21歲 Slashie / 自由設計師</h3>
+                <p class="text-[11px] text-brand-muted">零公司團體醫療，收入按月浮動。</p>
+              </div>
+            </div>
+            <div class="grid grid-cols-3 gap-2">
+              <button onclick="makeMatch(0, 'VHIS Medical', this)" class="p-2 rounded-xl border border-brand-border bg-brand-bg/60 text-[11px] font-medium hover:border-brand-neonGreen transition-all">VHIS 自願醫保</button>
+              <button onclick="makeMatch(0, 'Life Insurance', this)" class="p-2 rounded-xl border border-brand-border bg-brand-bg/60 text-[11px] font-medium hover:border-brand-neonGreen transition-all">人壽保險</button>
+              <button onclick="makeMatch(0, 'Annuity Plan', this)" class="p-2 rounded-xl border border-brand-border bg-brand-bg/60 text-[11px] font-medium hover:border-brand-neonGreen transition-all">退休延期年金</button>
+            </div>
+            <div id="feedback-0" class="hidden text-[11px] p-2 rounded-lg bg-brand-bg border border-brand-border"></div>
+          </div>
+
+          <!-- Persona 2 -->
+          <div class="glass-card rounded-2xl p-4 border border-brand-border space-y-3" id="persona-card-1">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-cyan-500 to-blue-500 flex items-center justify-center text-lg">💼</div>
+              <div>
+                <h3 class="font-bold text-sm text-white">Chloe, 25歲 大公司職場新鮮人</h3>
+                <p class="text-[11px] text-brand-muted">已有基本公司團體醫保，但危疾保障為零。</p>
+              </div>
+            </div>
+            <div class="grid grid-cols-3 gap-2">
+              <button onclick="makeMatch(1, 'Critical Illness', this)" class="p-2 rounded-xl border border-brand-border bg-brand-bg/60 text-[11px] font-medium hover:border-brand-neonGreen transition-all">危疾保險</button>
+              <button onclick="makeMatch(1, 'Travel Insurance', this)" class="p-2 rounded-xl border border-brand-border bg-brand-bg/60 text-[11px] font-medium hover:border-brand-neonGreen transition-all">全年旅遊保</button>
+              <button onclick="makeMatch(1, 'Whole Life', this)" class="p-2 rounded-xl border border-brand-border bg-brand-bg/60 text-[11px] font-medium hover:border-brand-neonGreen transition-all">終身儲蓄壽險</button>
+            </div>
+            <div id="feedback-1" class="hidden text-[11px] p-2 rounded-lg bg-brand-bg border border-brand-border"></div>
+          </div>
+
+          <!-- Persona 3 -->
+          <div class="glass-card rounded-2xl p-4 border border-brand-border space-y-3" id="persona-card-2">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-yellow-500 to-orange-500 flex items-center justify-center text-lg">🏠</div>
+              <div>
+                <h3 class="font-bold text-sm text-white">Marcus, 30歲 新手業主 / 爸爸</h3>
+                <p class="text-[11px] text-brand-muted">剛供 HK$600萬 樓梯按揭 + 有初生 BB。</p>
+              </div>
+            </div>
+            <div class="grid grid-cols-3 gap-2">
+              <button onclick="makeMatch(2, 'Term Life Insurance', this)" class="p-2 rounded-xl border border-brand-border bg-brand-bg/60 text-[11px] font-medium hover:border-brand-neonGreen transition-all">純定期人壽</button>
+              <button onclick="makeMatch(2, 'Accident Only', this)" class="p-2 rounded-xl border border-brand-border bg-brand-bg/60 text-[11px] font-medium hover:border-brand-neonGreen transition-all">意外醫療門診</button>
+              <button onclick="makeMatch(2, 'Pet Insurance', this)" class="p-2 rounded-xl border border-brand-border bg-brand-bg/60 text-[11px] font-medium hover:border-brand-neonGreen transition-all">寵物保險</button>
+            </div>
+            <div id="feedback-2" class="hidden text-[11px] p-2 rounded-lg bg-brand-bg border border-brand-border"></div>
+          </div>
+
+        </div>
+
+        <button id="step3-next-btn" disabled onclick="goToStep(4)" class="w-full py-4 rounded-xl bg-gray-800 text-gray-500 font-bold text-sm tracking-wide uppercase transition-all flex items-center justify-center gap-2 cursor-not-allowed">
+          <span>解鎖工具包與成果卡 (<span id="match-completed-count">0</span>/3)</span>
+          <i data-lucide="arrow-right" class="w-4 h-4"></i>
+        </button>
+      </section>
+
+      <!-- ================= STEP 4: PERSONAL RISK TOOLKIT & RESULT CARD ================= -->
+      <section id="step-4" class="step-content hidden space-y-5">
+        
+        <div class="text-center space-y-1">
+          <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-neonCyan/10 border border-brand-neonCyan/30 text-brand-muted text-xs font-mono mb-1">
+            <i data-lucide="award" class="w-3.5 h-3.5"></i> 工作坊賽後總結
+          </div>
+          <h2 class="text-2xl font-bold text-black">你的個人風險免疫力 Pass 🚀</h2>
+        </div>
+
+        <!-- SHAREABLE CARD CONTAINER (IG STORY OPTIMIZED) -->
+        <div id="shareable-card" class="glass-card rounded-2xl p-5 border-2 border-brand-neonCyan shadow-neon-cyan space-y-5 bg-gradient-to-b from-brand-card via-brand-bg to-brand-card relative">
+          
+          <!-- Card Header -->
+          <div class="flex justify-between items-center border-b border-brand-border/60 pb-3">
+            <div>
+              <span class="text-[10px] font-mono text-brand-neonCyan uppercase tracking-widest block" id="card-user-title">GUEST'S DEBRIEF PASS</span>
+              <h3 class="font-bold text-base text-white">香港大專生/新鮮人風險防禦卡</h3>
+            </div>
+            <div class="text-right flex items-center gap-2">
+            </div>
+          </div>
+
+          <!-- Score Badge section -->
+          <div class="flex items-center justify-between p-3 rounded-xl bg-brand-bg/90 border border-brand-border">
+            <div class="space-y-0.5">
+              <span class="text-[10px] text-brand-muted uppercase font-mono">財務免疫力評級</span>
+              <div class="font-bold text-lg text-brand-neonGreen flex items-center gap-2" id="final-immunity-rating">
+                <span>鈦金屬裝甲 🛡️</span>
+                <span class="text-xs">🛡️</span>
+              </div>
+            </div>
+            <div class="text-right font-mono text-2xl font-bold text-brand-neonCyan" id="final-score-percent">
+              88%
+            </div>
+          </div>
+
+          <!-- 3 Golden Rules -->
+          <div class="space-y-2">
+            <span class="text-[11px] font-bold text-gray-300 uppercase tracking-wider block">Gen-Z 避坑 3 大黃金法則：</span>
+            
+            <div class="p-2.5 rounded-lg bg-brand-card/80 border border-brand-border flex items-start gap-2.5 text-xs">
+              <span class="text-brand-neonPink font-mono font-bold">01</span>
+              <div>
+                <strong class="text-white block">先睇細節，後看保費</strong>
+                <span class="text-brand-muted text-[11px]">投保前先審視每年自負額（墊底費）及共同保險比例。</span>
+              </div>
+            </div>
+
+            <div class="p-2.5 rounded-lg bg-brand-card/80 border border-brand-border flex items-start gap-2.5 text-xs">
+              <span class="text-brand-neonCyan font-mono font-bold">02</span>
+              <div>
+                <strong class="text-white block">先保障，後投資</strong>
+                <span class="text-brand-muted text-[11px]">優先做好 basic VHIS 醫療與危疾，切忌盲目買入複雜儲蓄保。</span>
+              </div>
+            </div>
+
+            <div class="p-2.5 rounded-lg bg-brand-card/80 border border-brand-border flex items-start gap-2.5 text-xs">
+              <span class="text-brand-neonGreen font-mono font-bold">03</span>
+              <div>
+                <strong class="text-white block">隨人生階段 Update</strong>
+                <span class="text-brand-muted text-[11px]">轉工、買樓按揭或成立家庭時，必須及時重新檢視保單保障額。</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Neutral Soft Branding Footer -->
+          <div class="pt-2 border-t border-brand-border/40 flex items-center justify-between text-[10px] text-brand-muted font-mono">
+            <span>Powered by <strong class="text-brand-neonGreen">Lifegator.net</strong></span>
+            <span>獨立教育評估工具</span>
+          </div>
+        </div>
+
+        <!-- CTA Actions -->
+        <div class="space-y-3 pt-2">
+          <a href="https://lifegator.net/blog/1/" target="_blank" class="w-full py-3.5 rounded-xl bg-brand-card border border-brand-border text-gray-200 hover:text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 hover:border-brand-neonPink transition-all">
+            <i data-lucide="file-text" class="w-4 h-4 text-brand-neonPink"></i>
+            <span>免費獲取《職場新鮮人避坑懶人包》(PDF)</span>
+          </a>
+
+          <button onclick="resetApp()" class="w-full py-2.5 text-center text-xs text-brand-muted hover:text-white font-mono flex items-center justify-center gap-1">
+            <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+            <span>重新測試 / Replay Debriefing</span>
+          </button>
+        </div>
+
+      </section>
+
+    </main>
+
+    <!-- App Footer / Credits -->
+    <footer class="mt-6 py-3 text-center border-t border-brand-border/30 text-[11px] text-brand-muted font-mono">
+      <span>獨立保險通識教育 debriefing • <a href="https://lifegator.net" target="_blank" class="underline hover:text-brand-neonGreen">Lifegator.net</a></span>
+    </footer>
+
+  </div>
+
+  <!-- JAVASCRIPT APP LOGIC -->
+  <script>
+    // App State Management
+    const appState = {
+      currentStep: 1,
+      q1Answer: null,
+      q2Score: 0,
+      finePrintTrapsFound: new Set(),
+      personaMatches: {},
+      totalScore: 0
+    };
+
+    // Initialize Lucide Icons & Date on Load
+    document.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+      const today = new Date().toISOString().split('T')[0].replace(/-/g, '.');
+      const dateElem = document.getElementById('current-date-stamp');
+      if (dateElem) dateElem.textContent = today;
+    });
+
+    // Share Application Function
+    function shareApp() {
+      const shareData = {
+        title: '保險通識工作坊 • 賽後檢討與風險防禦評估',
+        text: '快啲嚟測試下你嘅理財與風險防禦等級！',
+        url: window.location.href
+      };
+
+      if (navigator.share) {
+        navigator.share(shareData).catch(() => {});
+      } else {
+        // Fallback: Copy link to clipboard
+        const dummy = document.createElement('input');
+        document.body.appendChild(dummy);
+        dummy.value = window.location.href;
+        dummy.select();
+        document.execCommand('copy');
+        document.body.removeChild(dummy);
+        
+        showToast('🔗 連結已複製，可直接貼上分享！');
+      }
+    }
+
+    // Toast Message Popup
+    function showToast(msg) {
+      let toast = document.getElementById('toast-notification');
+      if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'toast-notification';
+        toast.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-xl bg-brand-neonCyan text-black font-bold text-xs shadow-neon-cyan transition-all duration-300 opacity-0 pointer-events-none flex items-center gap-2';
+        document.body.appendChild(toast);
+      }
+      toast.textContent = msg;
+      toast.classList.remove('opacity-0', 'pointer-events-none');
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'pointer-events-none');
+      }, 2500);
+    }
+
+    // Navigation Handler
+    function goToStep(stepNumber) {
+      if (stepNumber < 1 || stepNumber > 4) return;
+      
+      // Hide current step
+      document.getElementById(`step-${appState.currentStep}`).classList.add('hidden');
+      
+      // Show target step
+      appState.currentStep = stepNumber;
+      document.getElementById(`step-${stepNumber}`).classList.remove('hidden');
+      
+      // Update Progress UI
+      document.getElementById('current-step-num').textContent = stepNumber;
+      const progressPercent = stepNumber * 25;
+      document.getElementById('progress-bar').style.width = `${progressPercent}%`;
+
+      // Trigger Confetti on final step
+      if (stepNumber === 4) {
+        calculateFinalScore();
+        confetti({
+          particleCount: 80,
+          spread: 70,
+          origin: { y: 0.6 }
+        });
+      }
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // STEP 1 LOGIC
+    function selectQ1(val, btn) {
+      appState.q1Answer = val;
+      document.querySelectorAll('.q1-btn').forEach(b => {
+        b.classList.remove('border-brand-neonCyan', 'bg-brand-neonCyan/10');
+      });
+      btn.classList.add('border-brand-neonCyan', 'bg-brand-neonCyan/10');
+      checkStep1Completion();
+    }
+
+    function selectQ2(score, btn) {
+      appState.q2Score = score;
+      document.querySelectorAll('.q2-btn').forEach(b => {
+        b.classList.remove('border-brand-neonPink', 'bg-brand-neonPink/10');
+      });
+      btn.classList.add('border-brand-neonPink', 'bg-brand-neonPink/10');
+      checkStep1Completion();
+    }
+
+    function checkStep1Completion() {
+      if (appState.q1Answer && appState.q2Score !== null) {
+        const nextBtn = document.getElementById('step1-next-btn');
+        nextBtn.disabled = false;
+        nextBtn.classList.remove('bg-gray-800', 'text-gray-500', 'cursor-not-allowed');
+        nextBtn.classList.add('bg-gradient-to-r', 'from-brand-neonCyan', 'to-brand-neonGreen', 'text-black', 'shadow-neon-cyan');
+
+        // Show Dynamic Rating
+        const ratingBox = document.getElementById('rating-output-box');
+        const badge = document.getElementById('defense-badge');
+        const desc = document.getElementById('defense-desc');
+        ratingBox.classList.remove('hidden');
+
+        if (appState.q2Score >= 80) {
+          badge.textContent = "鈦金屬裝甲 🛡️";
+          badge.className = "px-2 py-0.5 rounded text-xs font-bold font-mono uppercase bg-brand-neonGreen text-black";
+          desc.textContent = "儲蓄緩衝區做得唔錯！下一步係睇下點樣用最少保費（槓桿）去鎖定呢個防禦力。";
+        } else if (appState.q2Score >= 40) {
+          badge.textContent = "半熟防彈衣 ⚡";
+          badge.className = "px-2 py-0.5 rounded text-xs font-bold font-mono uppercase bg-brand-neonYellow text-black";
+          desc.textContent = "小病小痛勉強擋得住，但撞正重大手術，你嘅存款就會瞬間變「負資產」。";
+        } else {
+          badge.textContent = "紙紮防護罩 💀";
+          badge.className = "px-2 py-0.5 rounded text-xs font-bold font-mono uppercase bg-brand-neonPink text-black";
+          desc.textContent = "現實世界無 Re-open 鍵，一張私家醫院帳單就可以令你幾年 Working Holiday 兼職積蓄一次過清零。";
+        }
+      }
+    }
+
+    // STEP 2 LOGIC
+    const trapDetails = {
+      1: {
+        title: "陷阱 1：HK$50,000 高額自負額",
+        body: "頭 5 萬塊醫院帳單要你自己掏腰包！如果你住院只花了 4 萬，這張保單等同於 0 作用。"
+      },
+      2: {
+        title: "陷阱 2：50% 共同保險 (Co-insurance)",
+        body: "就算過咗墊底費，剩番嘅手術費保險公司只幫你找一半數！另一半要你再掏幾萬，根本無得『全數平賠』。"
+      },
+      3: {
+        title: "陷阱 3：180 天超長等候期",
+        body: "買咗保單頭半年內身體出任何狀況都不理賠。萬一呢半年內撞正盲腸炎或意外住院，就等於白交保費。"
+      }
+    };
+
+    function triggerHotspot(id) {
+      appState.finePrintTrapsFound.add(id);
+      
+      const elem = document.getElementById(`hotspot-${id}`);
+      const icon = document.getElementById(`spot-${id}-icon`);
+      elem.classList.remove('border-brand-neonPink/40');
+      elem.classList.add('border-brand-neonGreen', 'bg-brand-neonGreen/10');
+      icon.textContent = "✓";
+
+      // Show Popup Modal info
+      const modal = document.getElementById('hotspot-modal');
+      document.getElementById('modal-title').textContent = trapDetails[id].title;
+      document.getElementById('modal-body').textContent = trapDetails[id].body;
+      modal.classList.remove('hidden');
+
+      // Update count & button
+      const count = appState.finePrintTrapsFound.size;
+      document.getElementById('traps-found-count').textContent = count;
+
+      if (count === 3) {
+        const nextBtn = document.getElementById('step2-next-btn');
+        nextBtn.disabled = false;
+        nextBtn.classList.remove('bg-gray-800', 'text-gray-500', 'cursor-not-allowed');
+        nextBtn.classList.add('bg-gradient-to-r', 'from-brand-neonYellow', 'to-brand-neonGreen', 'text-black', 'shadow-neon-green');
+      }
+    }
+
+    // STEP 3 LOGIC
+    const personaAnswers = {
+      0: { correct: 'VHIS Medical', name: 'VHIS 自願醫保', explanation: '基礎 VHIS 自願醫保（用最低成本蓋好醫療底牌，免得一場病花光自由職業的本錢）。' },
+      1: { correct: 'Critical Illness', name: '危疾保險', explanation: '純危疾保險（公司醫保付醫療費，危疾險拿一筆過現金補貼停工期間的薪金）' },
+      2: { correct: 'Term Life Insurance', name: '純定期人壽', explanation: '純定期人壽 (Term Life)（拒絕昂貴的儲蓄壽險，用最便宜保費槓桿數百萬保障，確保萬一出事家人有樓住）。' }
+    };
+
+    function makeMatch(personaIdx, optionText, btn) {
+      const card = document.getElementById(`persona-card-${personaIdx}`);
+      const feedback = document.getElementById(`feedback-${personaIdx}`);
+      const isCorrect = optionText === personaAnswers[personaIdx].correct;
+
+      appState.personaMatches[personaIdx] = isCorrect;
+
+      // Disable sibling buttons inside this card
+      card.querySelectorAll('button').forEach(b => {
+        b.disabled = true;
+        b.classList.add('opacity-50', 'cursor-not-allowed');
+      });
+
+      if (isCorrect) {
+        btn.classList.remove('opacity-50');
+        btn.classList.add('bg-brand-neonGreen/20', 'border-brand-neonGreen', 'text-brand-neonGreen', 'font-bold');
+        feedback.className = "text-[11px] p-2.5 rounded-lg bg-brand-neonGreen/10 border border-brand-neonGreen text-brand-neonGreen font-medium";
+        feedback.innerHTML = `<strong>✓ 精準配對！</strong> ${personaAnswers[personaIdx].explanation}`;
+      } else {
+        btn.classList.remove('opacity-50');
+        btn.classList.add('bg-brand-neonPink/20', 'border-brand-neonPink', 'text-brand-neonPink', 'font-bold');
+        feedback.className = "text-[11px] p-2.5 rounded-lg bg-brand-neonPink/10 border border-brand-neonPink text-brand-neonPink font-medium";
+        feedback.innerHTML = `<strong>× 非首要優先。</strong> 這人最迫切需求是：<em>${personaAnswers[personaIdx].name}</em>。${personaAnswers[personaIdx].explanation}`;
+      }
+      feedback.classList.remove('hidden');
+
+      // Check step 3 completion
+      const completedCount = Object.keys(appState.personaMatches).length;
+      document.getElementById('match-completed-count').textContent = completedCount;
+
+      if (completedCount === 3) {
+        const nextBtn = document.getElementById('step3-next-btn');
+        nextBtn.disabled = false;
+        nextBtn.classList.remove('bg-gray-800', 'text-gray-500', 'cursor-not-allowed');
+        nextBtn.classList.add('bg-gradient-to-r', 'from-brand-neonGreen', 'to-brand-neonCyan', 'text-black', 'shadow-neon-cyan');
+      }
+    }
+
+    // STEP 4 CALCULATIONS & EXPORT
+    function calculateFinalScore() {
+      let score = appState.q2Score * 0.4; // 40 max
+      score += appState.finePrintTrapsFound.size * 10; // 30 max
+      
+      const correctMatches = Object.values(appState.personaMatches).filter(Boolean).length;
+      score += correctMatches * 10; // 30 max
+
+      const finalPercent = Math.min(Math.max(Math.round(score), 45), 98);
+      document.getElementById('final-score-percent').textContent = `${finalPercent}%`;
+
+      const ratingElem = document.getElementById('final-immunity-rating');
+      if (finalPercent >= 80) {
+        ratingElem.innerHTML = `<span>鈦金屬裝甲 </span> <span class="text-xs">🛡️</span>`;
+        ratingElem.className = "font-bold text-lg text-brand-neonGreen flex items-center gap-2";
+      } else if (finalPercent >= 60) {
+        ratingElem.innerHTML = `<span>半熟防彈衣</span> <span class="text-xs">⚡</span>`;
+        ratingElem.className = "font-bold text-lg text-brand-neonYellow flex items-center gap-2";
+      } else {
+        ratingElem.innerHTML = `<span>紙紮防護罩</span> <span class="text-xs">⚠️</span>`;
+        ratingElem.className = "font-bold text-lg text-brand-neonPink flex items-center gap-2";
+      }
+    }
+
+    function updateCardName(val) {
+      const cleanVal = val.trim();
+      const titleElem = document.getElementById('card-user-title');
+      if (cleanVal) {
+        titleElem.textContent = `${cleanVal.toUpperCase()}'S DEBRIEF PASS`;
+      } else {
+        titleElem.textContent = "GUEST'S DEBRIEF PASS";
+      }
+    }
+
+    // IG Story Canvas Download
+    function downloadIGStory() {
+      const card = document.getElementById('shareable-card');
+      html2canvas(card, {
+        backgroundColor: '#0A0B10',
+        scale: 2
+      }).then(canvas => {
+        const link = document.createElement('a');
+        link.download = 'lifegator-risk-immunity-card.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+      });
+    }
+
+    // Reset Application
+    function resetApp() {
+      appState.currentStep = 1;
+      appState.q1Answer = null;
+      appState.q2Score = 0;
+      appState.finePrintTrapsFound.clear();
+      appState.personaMatches = {};
+      appState.totalScore = 0;
+
+      // Reset Step 1 UI
+      document.querySelectorAll('.q1-btn').forEach(b => b.classList.remove('border-brand-neonCyan', 'bg-brand-neonCyan/10'));
+      document.querySelectorAll('.q2-btn').forEach(b => b.classList.remove('border-brand-neonPink', 'bg-brand-neonPink/10'));
+      document.getElementById('rating-output-box').classList.add('hidden');
+      const step1Btn = document.getElementById('step1-next-btn');
+      step1Btn.disabled = true;
+      step1Btn.className = "w-full py-4 rounded-xl bg-gray-800 text-gray-500 font-bold text-sm tracking-wide uppercase transition-all flex items-center justify-center gap-2 cursor-not-allowed";
+
+      // Reset Step 2 UI
+      [1, 2, 3].forEach(id => {
+        const elem = document.getElementById(`hotspot-${id}`);
+        const icon = document.getElementById(`spot-${id}-icon`);
+        elem.className = "relative p-2.5 rounded-xl bg-brand-bg/80 border border-brand-neonPink/40 cursor-pointer hover:bg-brand-neonPink/10 transition-all flex justify-between items-center group";
+        icon.textContent = "🔍";
+      });
+      document.getElementById('hotspot-modal').classList.add('hidden');
+      document.getElementById('traps-found-count').textContent = "0";
+      const step2Btn = document.getElementById('step2-next-btn');
+      step2Btn.disabled = true;
+      step2Btn.className = "w-full py-4 rounded-xl bg-gray-800 text-gray-500 font-bold text-sm tracking-wide uppercase transition-all flex items-center justify-center gap-2 cursor-not-allowed";
+
+      // Reset Step 3 UI
+      [0, 1, 2].forEach(pIdx => {
+        const card = document.getElementById(`persona-card-${pIdx}`);
+        card.querySelectorAll('button').forEach(b => {
+          b.disabled = false;
+          b.className = "p-2 rounded-xl border border-brand-border bg-brand-bg/60 text-[11px] font-medium hover:border-brand-neonGreen transition-all";
+        });
+        const feedback = document.getElementById(`feedback-${pIdx}`);
+        feedback.classList.add('hidden');
+      });
+      document.getElementById('match-completed-count').textContent = "0";
+      const step3Btn = document.getElementById('step3-next-btn');
+      step3Btn.disabled = true;
+      step3Btn.className = "w-full py-4 rounded-xl bg-gray-800 text-gray-500 font-bold text-sm tracking-wide uppercase transition-all flex items-center justify-center gap-2 cursor-not-allowed";
+
+      // Go back to Step 1
+      goToStep(1);
+    }
+  </script>
+
+</body>
+</html>

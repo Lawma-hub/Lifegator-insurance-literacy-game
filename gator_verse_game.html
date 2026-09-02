@@ -14,6 +14,12 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <!-- QRious QR Code Local Generator (Direct Canvas rendering bypasses all CSP image blocks) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+    <!-- Lucide Icons (for Debriefing session) -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Canvas Confetti (for Debriefing session) -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- html2canvas (for Debriefing IG Story download) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <!-- Firebase JS SDK (v8 Compat for single file ease of use) -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -64,6 +70,22 @@
         ::-webkit-scrollbar-track { background: #f8fafc; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        /* Debriefing Session Styles */
+        #debriefingScreen { background: #0A0B10; color: #F3F4F6; }
+        #debriefingScreen .debrief-glass {
+            background: rgba(18, 21, 32, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        #debriefingScreen .hotspot-pulse { animation: debriefPulse 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        @keyframes debriefPulse {
+            0%, 100% { transform: scale(1); opacity: 0.9; }
+            50% { transform: scale(1.15); opacity: 0.4; }
+        }
+        #debriefingScreen .debrief-glow-bg {
+            background: radial-gradient(circle at 50% 10%, rgba(0, 240, 255, 0.12) 0%, rgba(255, 0, 122, 0.05) 50%, rgba(10, 11, 16, 0) 100%);
+        }
     </style>
 </head>
 <body class="bg-[#FDFBF7] text-slate-900 min-h-screen flex flex-col overflow-x-hidden">
@@ -214,6 +236,17 @@
                     <button onclick="hostSkipPhase()" id="hostSkipBtn" class="w-full neo-btn bg-[#2E7D32] hover:bg-[#1B5E20] text-white text-xs font-black uppercase py-2.5 px-4 rounded-lg transition shadow-md">
                         <i class="fa-solid fa-forward mr-1"></i> 立即進入下一階段
                     </button>
+                </div>
+                <div id="hostPostGamePanel" class="mt-4 hidden p-4 bg-[#FFFDE7] border-2 border-[#0F172A] rounded-2xl text-left shadow-inner">
+                    <span class="block text-[10px] font-black text-amber-700 uppercase tracking-widest mb-3"><i class="fa-solid fa-flag-checkered mr-1"></i> 遊戲結束 • 後續選項</span>
+                    <div class="space-y-2.5">
+                        <button onclick="debriefEnter()" class="w-full neo-btn bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-black py-3 px-4 rounded-xl text-xs uppercase tracking-wider">
+                            <i class="fa-solid fa-chalkboard-user mr-1"></i> 進入 Debriefing 賽後檢討 (4 階段)
+                        </button>
+                        <button onclick="resetGame()" class="w-full neo-btn bg-slate-200 hover:bg-slate-300 text-slate-700 font-black py-2.5 px-4 rounded-xl text-xs uppercase tracking-wider">
+                            <i class="fa-solid fa-rotate-left mr-1"></i> 從頭再玩一次
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -696,6 +729,193 @@
 
                 </div>
 
+                <!-- Post-Game Actions (visible after game ends) -->
+                <div id="gameOverActions" class="mt-6 space-y-3">
+                    <button onclick="debriefEnter()" class="w-full neo-btn bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-black py-4 px-6 rounded-xl text-sm uppercase tracking-wider">
+                        <i class="fa-solid fa-chalkboard-user mr-2"></i> 進入 Debriefing 賽後檢討
+                    </button>
+                    <button onclick="resetGame()" class="w-full neo-btn bg-slate-200 hover:bg-slate-300 text-slate-700 font-black py-3 px-6 rounded-xl text-sm uppercase tracking-wider">
+                        <i class="fa-solid fa-rotate-left mr-2"></i> 從頭再玩一次
+                    </button>
+                </div>
+            </div>
+
+            <!-- STATE: DEBRIEFING SESSION (4 Steps, Host-Controlled) -->
+            <div id="debriefingScreen" class="hidden flex-grow flex flex-col overflow-y-auto debrief-glow-bg" style="background:#0A0B10;color:#F3F4F6;border-radius:0 0 21px 21px;">
+                <!-- Top Nav -->
+                <header class="flex items-center justify-between py-3 mb-2 border-b" style="border-color:rgba(255,255,255,0.08)">
+                    <div class="flex items-center space-x-2">
+                        <div class="w-2.5 h-2.5 rounded-full bg-green-400 animate-pulse"></div>
+                        <span class="font-mono text-xs tracking-wider uppercase" style="color:#8A94B2">賽後檢討 • Debriefing</span>
+                    </div>
+                    <div class="px-2.5 py-1 rounded-full text-xs font-mono" style="background:#121520;border:1px solid #23283B;color:#00F0FF">階段 <span id="debrief-step-num">1</span>/4</div>
+                </header>
+                <div class="w-full h-1.5 rounded-full mb-6 overflow-hidden flex" style="background:#121520">
+                    <div id="debrief-progress" class="h-full rounded-full transition-all duration-500" style="width:25%;background:linear-gradient(to right,#00F0FF,#00FF9D,#FF007A)"></div>
+                </div>
+                <main id="debrief-container" class="flex-grow flex flex-col my-auto px-1">
+                    <!-- STEP 1: Reality Check -->
+                    <section id="debrief-step-1" class="debrief-step space-y-6">
+                        <div class="text-center space-y-2">
+                            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono mb-1" style="background:rgba(0,240,255,0.1);border:1px solid rgba(138,148,178,0.3);color:#8A94B2">階段 1：現實檢驗</div>
+                            <h1 class="text-2xl font-bold tracking-tight text-black">遊戲開局輸咗可以 Re-open，現實世界爆煲點算？ 🎲</h1>
+                            <p class="text-sm" style="color:#8A94B2">剛才玩完桌遊，你係靠實力贏，定係撞正意外張牌被扣到破產？</p>
+                        </div>
+                        <div class="debrief-glass rounded-2xl p-5 space-y-5">
+                            <div class="space-y-3">
+                                <label class="block text-sm font-semibold" style="color:#E5E7EB">1. 剛才遊戲中撞正意外/疾病出現，受到財務懲罰的時候你在想甚麼？</label>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <button onclick="debriefSelectQ1('luck',this)" class="dq1-btn p-3 text-left rounded-xl border bg-opacity-50 hover:opacity-80 transition-all flex flex-col justify-between h-20 text-xs font-medium" style="border-color:#23283B;background:rgba(10,11,16,0.5)"><span class="text-lg">🎲</span><span>純粹命仔唔好，跌咗落遊戲陷阱</span></button>
+                                    <button onclick="debriefSelectQ1('strategy',this)" class="dq1-btn p-3 text-left rounded-xl border bg-opacity-50 hover:opacity-80 transition-all flex flex-col justify-between h-20 text-xs font-medium" style="border-color:#23283B;background:rgba(10,11,16,0.5)"><span class="text-lg">🧠</span><span>現實寫照！我平時都係零防護裸奔</span></button>
+                                </div>
+                            </div>
+                            <div class="space-y-3">
+                                <label class="block text-sm font-semibold" style="color:#E5E7EB">2. 若明日現實突然收到 HK$100,000 私家醫院帳單，你嘅流動資金狀態係...</label>
+                                <div class="space-y-2">
+                                    <button onclick="debriefSelectQ2(10,this)" class="dq2-btn w-full p-3 text-left rounded-xl border bg-opacity-50 hover:opacity-80 transition-all text-xs flex justify-between items-center" style="border-color:#23283B;background:rgba(10,11,16,0.5)"><span>💸 &lt; 1 個月（即時爆煲破產）</span><span class="font-mono text-xs font-bold" style="color:#FF007A">即時 Game Over</span></button>
+                                    <button onclick="debriefSelectQ2(40,this)" class="dq2-btn w-full p-3 text-left rounded-xl border bg-opacity-50 hover:opacity-80 transition-all text-xs flex justify-between items-center" style="border-color:#23283B;background:rgba(10,11,16,0.5)"><span>⚡ 3 個月緊急備用金（傷及元氣）</span><span class="font-mono text-xs" style="color:#FFE600">血量扣 80%</span></button>
+                                    <button onclick="debriefSelectQ2(80,this)" class="dq2-btn w-full p-3 text-left rounded-xl border bg-opacity-50 hover:opacity-80 transition-all text-xs flex justify-between items-center" style="border-color:#23283B;background:rgba(10,11,16,0.5)"><span>🛡️ 6 個月以上穩健儲蓄（安全度過）</span><span class="font-mono text-xs" style="color:#00FF9D">擋得住一次</span></button>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="debrief-rating-box" class="hidden debrief-glass rounded-2xl p-4 space-y-2" style="border:1px solid rgba(0,240,255,0.4)">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs uppercase font-mono tracking-wider" style="color:#8A94B2">估算防禦級別：</span>
+                                <span id="debrief-defense-badge" class="px-2 py-0.5 rounded text-xs font-bold font-mono uppercase" style="background:#FF007A;color:#000">紙紮防護罩 💀</span>
+                            </div>
+                            <p id="debrief-defense-desc" class="text-xs" style="color:#D1D5DB">現實世界無 Re-open 鍵，一張私家醫院帳單就可以令你幾年積蓄一次過清零。</p>
+                        </div>
+                        <button id="debrief-step1-btn" disabled onclick="debriefGoToStep(2)" class="w-full py-4 rounded-xl font-bold text-sm tracking-wide uppercase transition-all flex items-center justify-center gap-2 cursor-not-allowed" style="background:#1F2937;color:#6B7280">
+                            <span>鎖定結果 • 進入下一步</span> <span>→</span>
+                        </button>
+                    </section>
+                    <!-- STEP 2: Fine Print Challenge -->
+                    <section id="debrief-step-2" class="debrief-step hidden space-y-5">
+                        <div class="text-center space-y-1">
+                            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono mb-1" style="background:rgba(255,230,0,0.1);border:1px solid rgba(255,230,0,0.3);color:#8A94B2">階段 2：魔鬼細節大偵探</div>
+                            <h2 class="text-xl font-bold text-black">網上比價好便宜？小心買咗「裝飾用保單」！</h2>
+                            <p class="text-xs" style="color:#8A94B2">有些保單每個月比一杯星巴克還便宜，但出事時才發現「這不賠、那不賠」。<span class="font-semibold" style="color:#FF007A">3 個閃爍陷阱</span>！</p>
+                        </div>
+                        <div class="space-y-4">
+                            <div class="debrief-glass rounded-2xl p-4 relative overflow-hidden" style="border:2px solid rgba(255,0,122,0.6);background:linear-gradient(to bottom right,#121520,#0A0B10)">
+                                <div class="absolute top-0 right-0 text-black font-mono text-[10px] font-bold px-3 py-0.5 rounded-bl-lg" style="background:#FF007A">超抵平保單？</div>
+                                <div class="flex justify-between items-start mb-3">
+                                    <div><h3 class="font-bold text-base text-white">Plan A：「至抵玩新手醫療保」</h3><span class="text-xs" style="color:#8A94B2">目標對象：剛畢業大專生</span></div>
+                                    <div class="text-right"><span class="text-lg font-mono font-bold" style="color:#00FF9D">HK$180</span><span class="text-[10px] block" style="color:#8A94B2">/ 每月</span></div>
+                                </div>
+                                <div class="space-y-2 text-xs">
+                                    <div onclick="debriefTriggerHotspot(1)" id="debrief-hotspot-1" class="relative p-2.5 rounded-xl cursor-pointer transition-all flex justify-between items-center group hotspot-pulse" style="background:rgba(10,11,16,0.8);border:1px solid rgba(255,0,122,0.4)">
+                                        <div><span class="block text-[10px]" style="color:#9CA3AF">每年自負額 (墊底費)</span><span class="font-mono font-bold" style="color:#FF007A">HK$50,000 需自付</span></div>
+                                        <div class="w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs" style="background:rgba(255,0,122,0.2);color:#FF007A"><span id="debrief-spot-1-icon">🔍</span></div>
+                                    </div>
+                                    <div onclick="debriefTriggerHotspot(2)" id="debrief-hotspot-2" class="relative p-2.5 rounded-xl cursor-pointer transition-all flex justify-between items-center group hotspot-pulse" style="background:rgba(10,11,16,0.8);border:1px solid rgba(255,0,122,0.4)">
+                                        <div><span class="block text-[10px]" style="color:#9CA3AF">專科及手術費保障條款</span><span class="font-mono font-bold" style="color:#FF007A">50% 共同保險</span></div>
+                                        <div class="w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs" style="background:rgba(255,0,122,0.2);color:#FF007A"><span id="debrief-spot-2-icon">🔍</span></div>
+                                    </div>
+                                    <div onclick="debriefTriggerHotspot(3)" id="debrief-hotspot-3" class="relative p-2.5 rounded-xl cursor-pointer transition-all flex justify-between items-center group hotspot-pulse" style="background:rgba(10,11,16,0.8);border:1px solid rgba(255,0,122,0.4)">
+                                        <div><span class="block text-[10px]" style="color:#9CA3AF">未知已有疾病 / 等候期條款</span><span class="font-mono font-bold" style="color:#FF007A">180 天超長等候期</span></div>
+                                        <div class="w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs" style="background:rgba(255,0,122,0.2);color:#FF007A"><span id="debrief-spot-3-icon">🔍</span></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="debrief-glass rounded-2xl p-4 opacity-75" style="border:1px solid #23283B">
+                                <div class="flex justify-between items-start mb-2">
+                                    <div><h3 class="font-bold text-sm" style="color:#E5E7EB">Plan B：標準 VHIS 自願醫保</h3><span class="text-[10px]" style="color:#8A94B2">政府認可標準計劃</span></div>
+                                    <div class="text-right"><span class="text-sm font-mono font-bold text-white">HK$420</span><span class="text-[10px] block" style="color:#8A94B2">/ 每月</span></div>
+                                </div>
+                                <div class="grid grid-cols-3 gap-2 text-[10px] font-mono text-center pt-1" style="color:#D1D5DB;border-top:1px solid rgba(35,40,59,0.4)">
+                                    <div class="p-1.5 rounded" style="background:#0A0B10">自負額：$0</div>
+                                    <div class="p-1.5 rounded" style="background:#0A0B10">賠償率：全數保障</div>
+                                    <div class="p-1.5 rounded" style="background:#0A0B10">可扣稅優惠</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="debrief-hotspot-modal" class="hidden debrief-glass p-4 rounded-xl space-y-2" style="border:1px solid #FFE600;background:rgba(18,21,32,0.95)">
+                            <div class="flex items-center gap-2 font-bold text-xs" style="color:#FFE600"><span>⚠️</span><span id="debrief-modal-title">破解魔鬼細節！</span></div>
+                            <p id="debrief-modal-body" class="text-xs" style="color:#E5E7EB">頭 5 萬塊醫院帳單要你自己掏腰包！</p>
+                        </div>
+                        <button id="debrief-step2-btn" disabled onclick="debriefGoToStep(3)" class="w-full py-4 rounded-xl font-bold text-sm tracking-wide uppercase transition-all flex items-center justify-center gap-2 cursor-not-allowed" style="background:#1F2937;color:#6B7280">
+                            <span>已拆解陷阱 (<span id="debrief-traps-count">0</span>/3)</span> <span>→</span>
+                        </button>
+                    </section>
+                    <!-- STEP 3: Life Stage Matchmaker -->
+                    <section id="debrief-step-3" class="debrief-step hidden space-y-5">
+                        <div class="text-center space-y-1">
+                            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono mb-1" style="background:rgba(0,255,157,0.1);border:1px solid rgba(0,255,157,0.3);color:#8A94B2">階段 3：人生階段精準配對</div>
+                            <h2 class="text-xl font-bold text-black">不做被推銷的「肥羊」！30 秒幫不同角色點對天賦 🎯</h2>
+                            <p class="text-xs" style="color:#8A94B2">為以下 3 個典型香港人設，選出 <span class="font-semibold" style="color:#00FF9D">#1 最迫切保障</span>！</p>
+                        </div>
+                        <div class="space-y-4">
+                            <div class="debrief-glass rounded-2xl p-4 space-y-3" id="debrief-persona-0" style="border:1px solid #23283B">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-full flex items-center justify-center text-lg" style="background:linear-gradient(to top right,#A855F7,#EC4899)">🎨</div>
+                                    <div><h3 class="font-bold text-sm text-white">Alex, 21歲 Slashie / 自由設計師</h3><p class="text-[11px]" style="color:#8A94B2">零公司團體醫療，收入按月浮動。</p></div>
+                                </div>
+                                <div class="grid grid-cols-3 gap-2">
+                                    <button onclick="debriefMakeMatch(0,'VHIS Medical',this)" class="p-2 rounded-xl border text-[11px] font-medium transition-all" style="border-color:#23283B;background:rgba(10,11,16,0.6)">VHIS 自願醫保</button>
+                                    <button onclick="debriefMakeMatch(0,'Life Insurance',this)" class="p-2 rounded-xl border text-[11px] font-medium transition-all" style="border-color:#23283B;background:rgba(10,11,16,0.6)">人壽保險</button>
+                                    <button onclick="debriefMakeMatch(0,'Annuity Plan',this)" class="p-2 rounded-xl border text-[11px] font-medium transition-all" style="border-color:#23283B;background:rgba(10,11,16,0.6)">退休延期年金</button>
+                                </div>
+                                <div id="debrief-feedback-0" class="hidden text-[11px] p-2 rounded-lg" style="background:#0A0B10;border:1px solid #23283B"></div>
+                            </div>
+                            <div class="debrief-glass rounded-2xl p-4 space-y-3" id="debrief-persona-1" style="border:1px solid #23283B">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-full flex items-center justify-center text-lg" style="background:linear-gradient(to top right,#06B6D4,#3B82F6)">💼</div>
+                                    <div><h3 class="font-bold text-sm text-white">Chloe, 25歲 大公司職場新鮮人</h3><p class="text-[11px]" style="color:#8A94B2">已有基本公司團體醫保，但危疾保障為零。</p></div>
+                                </div>
+                                <div class="grid grid-cols-3 gap-2">
+                                    <button onclick="debriefMakeMatch(1,'Critical Illness',this)" class="p-2 rounded-xl border text-[11px] font-medium transition-all" style="border-color:#23283B;background:rgba(10,11,16,0.6)">危疾保險</button>
+                                    <button onclick="debriefMakeMatch(1,'Travel Insurance',this)" class="p-2 rounded-xl border text-[11px] font-medium transition-all" style="border-color:#23283B;background:rgba(10,11,16,0.6)">全年旅遊保</button>
+                                    <button onclick="debriefMakeMatch(1,'Whole Life',this)" class="p-2 rounded-xl border text-[11px] font-medium transition-all" style="border-color:#23283B;background:rgba(10,11,16,0.6)">終身儲蓄壽險</button>
+                                </div>
+                                <div id="debrief-feedback-1" class="hidden text-[11px] p-2 rounded-lg" style="background:#0A0B10;border:1px solid #23283B"></div>
+                            </div>
+                            <div class="debrief-glass rounded-2xl p-4 space-y-3" id="debrief-persona-2" style="border:1px solid #23283B">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-full flex items-center justify-center text-lg" style="background:linear-gradient(to top right,#EAB308,#F97316)">🏠</div>
+                                    <div><h3 class="font-bold text-sm text-white">Marcus, 30歲 新手業主 / 爸爸</h3><p class="text-[11px]" style="color:#8A94B2">剛供 HK$600萬 樓梯按揭 + 有初生 BB。</p></div>
+                                </div>
+                                <div class="grid grid-cols-3 gap-2">
+                                    <button onclick="debriefMakeMatch(2,'Term Life Insurance',this)" class="p-2 rounded-xl border text-[11px] font-medium transition-all" style="border-color:#23283B;background:rgba(10,11,16,0.6)">純定期人壽</button>
+                                    <button onclick="debriefMakeMatch(2,'Accident Only',this)" class="p-2 rounded-xl border text-[11px] font-medium transition-all" style="border-color:#23283B;background:rgba(10,11,16,0.6)">意外醫療門診</button>
+                                    <button onclick="debriefMakeMatch(2,'Pet Insurance',this)" class="p-2 rounded-xl border text-[11px] font-medium transition-all" style="border-color:#23283B;background:rgba(10,11,16,0.6)">寵物保險</button>
+                                </div>
+                                <div id="debrief-feedback-2" class="hidden text-[11px] p-2 rounded-lg" style="background:#0A0B10;border:1px solid #23283B"></div>
+                            </div>
+                        </div>
+                        <button id="debrief-step3-btn" disabled onclick="debriefGoToStep(4)" class="w-full py-4 rounded-xl font-bold text-sm tracking-wide uppercase transition-all flex items-center justify-center gap-2 cursor-not-allowed" style="background:#1F2937;color:#6B7280">
+                            <span>解鎖工具包 (<span id="debrief-match-count">0</span>/3)</span> <span>→</span>
+                        </button>
+                    </section>
+                    <!-- STEP 4: Risk Toolkit & Result Card -->
+                    <section id="debrief-step-4" class="debrief-step hidden space-y-5">
+                        <div class="text-center space-y-1">
+                            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono mb-1" style="background:rgba(0,240,255,0.1);border:1px solid rgba(0,240,255,0.3);color:#8A94B2">工作坊賽後總結</div>
+                            <h2 class="text-2xl font-bold text-black">你的個人風險免疫力 Pass 🚀</h2>
+                        </div>
+                        <div id="debrief-shareable" class="debrief-glass rounded-2xl p-5 space-y-5 relative" style="border:2px solid #00F0FF;box-shadow:0 0 20px rgba(0,240,255,0.35);background:linear-gradient(to bottom,#121520,#0A0B10,#121520)">
+                            <div class="flex justify-between items-center pb-3" style="border-bottom:1px solid rgba(35,40,59,0.6)">
+                                <div><span class="text-[10px] font-mono uppercase tracking-widest block" style="color:#00F0FF" id="debrief-card-title">GUEST'S DEBRIEF PASS</span><h3 class="font-bold text-base text-white">香港大專生/新鮮人風險防禦卡</h3></div>
+                            </div>
+                            <div class="flex items-center justify-between p-3 rounded-xl" style="background:rgba(10,11,16,0.9);border:1px solid #23283B">
+                                <div class="space-y-0.5"><span class="text-[10px] uppercase font-mono" style="color:#8A94B2">財務免疫力評級</span><div class="font-bold text-lg flex items-center gap-2" style="color:#00FF9D" id="debrief-final-rating"><span>鈦金屬裝甲 🛡️</span></div></div>
+                                <div class="text-right font-mono text-2xl font-bold" style="color:#00F0FF" id="debrief-final-score">88%</div>
+                            </div>
+                            <div class="space-y-2">
+                                <span class="text-[11px] font-bold uppercase tracking-wider block" style="color:#D1D5DB">Gen-Z 避坑 3 大黃金法則：</span>
+                                <div class="p-2.5 rounded-lg flex items-start gap-2.5 text-xs" style="background:rgba(18,21,32,0.8);border:1px solid #23283B"><span class="font-mono font-bold" style="color:#FF007A">01</span><div><strong class="text-white block">先睇細節，後看保費</strong><span class="text-[11px]" style="color:#8A94B2">投保前先審視每年自負額（墊底費）及共同保險比例。</span></div></div>
+                                <div class="p-2.5 rounded-lg flex items-start gap-2.5 text-xs" style="background:rgba(18,21,32,0.8);border:1px solid #23283B"><span class="font-mono font-bold" style="color:#00F0FF">02</span><div><strong class="text-white block">先保障，後投資</strong><span class="text-[11px]" style="color:#8A94B2">優先做好 basic VHIS 醫療與危疾，切忌盲目買入複雜儲蓄保。</span></div></div>
+                                <div class="p-2.5 rounded-lg flex items-start gap-2.5 text-xs" style="background:rgba(18,21,32,0.8);border:1px solid #23283B"><span class="font-mono font-bold" style="color:#00FF9D">03</span><div><strong class="text-white block">隨人生階段 Update</strong><span class="text-[11px]" style="color:#8A94B2">轉工、買樓按揭或成立家庭時，必須及時重新檢視保單保障額。</span></div></div>
+                            </div>
+                            <div class="pt-2 flex items-center justify-between text-[10px] font-mono" style="border-top:1px solid rgba(35,40,59,0.4);color:#8A94B2"><span>Powered by <strong style="color:#00FF9D">Lifegator.net</strong></span><span>獨立教育評估工具</span></div>
+                        </div>
+                        <div class="space-y-3 pt-2">
+                            <a href="https://lifegator.net/blog/1/" target="_blank" class="w-full py-3.5 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all" style="background:#121520;border:1px solid #23283B;color:#E5E7EB"><span>📄</span><span>免費獲取《職場新鮮人避坑懶人包》(PDF)</span></a>
+                            <button onclick="debriefReset()" class="w-full py-2.5 text-center text-xs font-mono flex items-center justify-center gap-1" style="color:#8A94B2"><span>🔄</span><span>重新測試 / Replay Debriefing</span></button>
+                        </div>
+                    </section>
+                </main>
+                <footer class="mt-6 py-3 text-center text-[11px] font-mono" style="border-top:1px solid rgba(35,40,59,0.3);color:#8A94B2"><span>獨立保險通識教育 debriefing • <a href="https://lifegator.net" target="_blank" class="underline" style="color:#00FF9D">Lifegator.net</a></span></footer>
             </div>
         </section>
     </main>
@@ -1072,6 +1292,21 @@
                 return;
             }
 
+            // Handle debriefing phase (both host and player views)
+            if (phase === 'debriefing') {
+                document.getElementById('gameplayScreen').classList.add('hidden');
+                document.getElementById('gameOverScreen').classList.add('hidden');
+                document.getElementById('setupScreen').classList.add('hidden');
+                document.getElementById('debriefingScreen').classList.remove('hidden');
+                var step = state.debriefStep || 1;
+                debriefShowStep(step);
+                if (localRole === 'host' || localRole === 'demo') {
+                    document.getElementById('hostDebriefLabel').innerText = 'Debriefing 階段 ' + step + '/4';
+                    document.getElementById('hostDebriefCountdown').innerText = '✓';
+                }
+                return;
+            }
+
             if (localRole !== 'player') return; // host/demo do not follow broadcasts
 
             if (phase === 'decision') {
@@ -1258,6 +1493,7 @@
             document.getElementById('wheelStatusText').innerText = '本場遊戲已結束 🏁';
             document.getElementById('activeStageIndicator').innerText = 'Stage: GAMEOVER';
             updateAggregatedRealtimeStatsPanel();
+            document.getElementById('hostPostGamePanel').classList.remove('hidden');
         }
 
         // Pick ONE global fate event for the whole class this round.
@@ -2108,6 +2344,11 @@
             currentPhase = 'lobby'; lastPhaseKey = '';
             decisionCommitted = false; shopCommitted = false; joining = false;
             document.getElementById('hostGameControlPanel').classList.add('hidden');
+            document.getElementById('debriefingScreen').classList.add('hidden');
+            document.getElementById('hostPostGamePanel').classList.add('hidden');
+            if (currentPhase === 'debriefing' || !document.getElementById('debriefingScreen').classList.contains('hidden')) {
+                document.getElementById('gameplayScreen').classList.remove('hidden');
+            }
 
             playerState = {
                 name: playerState.name, health: 100, energy: 100, money: 10000,
@@ -2171,6 +2412,211 @@
             }
         }
 
+        // ===== DEBRIEFING SESSION SYSTEM =====
+        let debriefState = { currentStep: 1, q1Answer: null, q2Score: 0, trapsFound: new Set(), personaMatches: {} };
+
+        function debriefEnter() {
+            playSuccess();
+            document.getElementById('gameOverScreen').classList.add('hidden');
+            document.getElementById('gameplayScreen').classList.add('hidden');
+            document.getElementById('setupScreen').classList.add('hidden');
+            document.getElementById('debriefingScreen').classList.remove('hidden');
+            document.getElementById('hostPostGamePanel').classList.add('hidden');
+            if (isFirebaseActive && localRole === 'host') {
+                db.ref('rooms/' + roomPin + '/gameState').update({ phase: 'debriefing', debriefStep: 1 });
+            }
+            var ctrl = document.getElementById('hostGameControlPanel');
+            ctrl.classList.remove('hidden');
+            document.getElementById('hostPhaseLabel').innerText = 'Debriefing 階段 1/4';
+            document.getElementById('hostPhaseCountdown').innerText = '✓';
+            var skipBtn = document.getElementById('hostSkipBtn');
+            skipBtn.classList.remove('hidden'); skipBtn.disabled = false;
+            skipBtn.innerHTML = '<i class="fa-solid fa-forward mr-1"></i> 進入下一 Debriefing 階段';
+            skipBtn.onclick = function() { debriefGoToStep(debriefState.currentStep + 1); };
+            document.getElementById('activeStageIndicator').innerText = 'Stage: DEBRIEFING';
+            debriefShowStep(1);
+        }
+
+        function debriefShowStep(step) {
+            for (var i = 1; i <= 4; i++) {
+                var el = document.getElementById('debrief-step-' + i);
+                if (el) { if (i === step) el.classList.remove('hidden'); else el.classList.add('hidden'); }
+            }
+            var numEl = document.getElementById('debrief-step-num');
+            if (numEl) numEl.textContent = step;
+            var progEl = document.getElementById('debrief-progress');
+            if (progEl) progEl.style.width = (step * 25) + '%';
+        }
+
+        function debriefGoToStep(step) {
+            if (step < 1 || step > 4) return;
+            playClick();
+            debriefState.currentStep = step;
+            debriefShowStep(step);
+            if (isFirebaseActive && localRole === 'host') {
+                db.ref('rooms/' + roomPin + '/gameState').update({ phase: 'debriefing', debriefStep: step });
+            }
+            var label = document.getElementById('hostPhaseLabel');
+            if (label) label.innerText = 'Debriefing 階段 ' + step + '/4';
+            if (step === 4) {
+                debriefCalculateScore();
+                if (typeof confetti === 'function') confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
+                var skipBtn = document.getElementById('hostSkipBtn');
+                if (skipBtn) skipBtn.classList.add('hidden');
+            } else {
+                var skipBtn2 = document.getElementById('hostSkipBtn');
+                if (skipBtn2) skipBtn2.innerHTML = '<i class="fa-solid fa-forward mr-1"></i> 進入 Debriefing 階段 ' + (step + 1);
+            }
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        }
+
+        function debriefSelectQ1(val, btn) {
+            debriefState.q1Answer = val;
+            document.querySelectorAll('.dq1-btn').forEach(function(b) { b.style.borderColor = '#23283B'; b.style.background = 'rgba(10,11,16,0.5)'; });
+            btn.style.borderColor = '#00F0FF'; btn.style.background = 'rgba(0,240,255,0.1)';
+            debriefCheckStep1();
+        }
+
+        function debriefSelectQ2(score, btn) {
+            debriefState.q2Score = score;
+            document.querySelectorAll('.dq2-btn').forEach(function(b) { b.style.borderColor = '#23283B'; b.style.background = 'rgba(10,11,16,0.5)'; });
+            btn.style.borderColor = '#FF007A'; btn.style.background = 'rgba(255,0,122,0.1)';
+            debriefCheckStep1();
+        }
+
+        function debriefCheckStep1() {
+            if (debriefState.q1Answer && debriefState.q2Score) {
+                var nextBtn = document.getElementById('debrief-step1-btn');
+                nextBtn.disabled = false; nextBtn.style.background = 'linear-gradient(to right,#00F0FF,#00FF9D)'; nextBtn.style.color = '#000'; nextBtn.style.cursor = 'pointer';
+                var box = document.getElementById('debrief-rating-box');
+                var badge = document.getElementById('debrief-defense-badge');
+                var desc = document.getElementById('debrief-defense-desc');
+                box.classList.remove('hidden');
+                if (debriefState.q2Score >= 80) {
+                    badge.textContent = '鈦金屬裝甲 🛡️'; badge.style.background = '#00FF9D'; badge.style.color = '#000';
+                    desc.textContent = '儲蓄緩衝區做得唔錯！下一步係睇下點樣用最少保費去鎖定呢個防禦力。';
+                } else if (debriefState.q2Score >= 40) {
+                    badge.textContent = '半熟防彈衣 ⚡'; badge.style.background = '#FFE600'; badge.style.color = '#000';
+                    desc.textContent = '小病小痛勉強擋得住，但撞正重大手術，你嘅存款就會瞬間變「負資產」。';
+                } else {
+                    badge.textContent = '紙紮防護罩 💀'; badge.style.background = '#FF007A'; badge.style.color = '#000';
+                    desc.textContent = '現實世界無 Re-open 鍵，一張私家醫院帳單就可以令你幾年 Working Holiday 積蓄一次過清零。';
+                }
+            }
+        }
+
+        var debriefTrapDetails = {
+            1: { title: '陷阱 1：HK$50,000 高額自負額', body: '頭 5 萬塊醫院帳單要你自己掏腰包！如果你住院只花了 4 萬，這張保單等同於 0 作用。' },
+            2: { title: '陷阱 2：50% 共同保險 (Co-insurance)', body: '就算過咗墊底費，剩番嘅手術費保險公司只幫你找一半數！另一半要你再掏幾萬。' },
+            3: { title: '陷阱 3：180 天超長等候期', body: '買咗保單頭半年內身體出任何狀況都不理賠。萬一呢半年內撞正盲腸炎，就等於白交保費。' }
+        };
+
+        function debriefTriggerHotspot(id) {
+            debriefState.trapsFound.add(id);
+            var elem = document.getElementById('debrief-hotspot-' + id);
+            elem.style.borderColor = '#00FF9D'; elem.style.background = 'rgba(0,255,157,0.1)';
+            document.getElementById('debrief-spot-' + id + '-icon').textContent = '✓';
+            document.getElementById('debrief-modal-title').textContent = debriefTrapDetails[id].title;
+            document.getElementById('debrief-modal-body').textContent = debriefTrapDetails[id].body;
+            document.getElementById('debrief-hotspot-modal').classList.remove('hidden');
+            document.getElementById('debrief-traps-count').textContent = debriefState.trapsFound.size;
+            if (debriefState.trapsFound.size === 3) {
+                var nextBtn = document.getElementById('debrief-step2-btn');
+                nextBtn.disabled = false; nextBtn.style.background = 'linear-gradient(to right,#FFE600,#00FF9D)'; nextBtn.style.color = '#000'; nextBtn.style.cursor = 'pointer';
+            }
+        }
+
+        var debriefPersonaAnswers = {
+            0: { correct: 'VHIS Medical', name: 'VHIS 自願醫保', explanation: '基礎 VHIS 自願醫保（用最低成本蓋好醫療底牌，免得一場病花光自由職業的本錢）。' },
+            1: { correct: 'Critical Illness', name: '危疾保險', explanation: '純危疾保險（公司醫保付醫療費，危疾險拿一筆過現金補貼停工期間的薪金）。' },
+            2: { correct: 'Term Life Insurance', name: '純定期人壽', explanation: '純定期人壽 (Term Life)（用最便宜保費槓桿數百萬保障，確保萬一出事家人有樓住）。' }
+        };
+
+        function debriefMakeMatch(personaIdx, optionText, btn) {
+            var card = document.getElementById('debrief-persona-' + personaIdx);
+            var feedback = document.getElementById('debrief-feedback-' + personaIdx);
+            var isCorrect = optionText === debriefPersonaAnswers[personaIdx].correct;
+            debriefState.personaMatches[personaIdx] = isCorrect;
+            card.querySelectorAll('button').forEach(function(b) { b.disabled = true; b.style.opacity = '0.5'; b.style.cursor = 'not-allowed'; });
+            btn.style.opacity = '1';
+            if (isCorrect) {
+                btn.style.background = 'rgba(0,255,157,0.2)'; btn.style.borderColor = '#00FF9D'; btn.style.color = '#00FF9D';
+                feedback.className = 'text-[11px] p-2.5 rounded-lg font-medium'; feedback.style.background = 'rgba(0,255,157,0.1)'; feedback.style.borderColor = '#00FF9D'; feedback.style.color = '#00FF9D'; feedback.style.border = '1px solid #00FF9D';
+                feedback.innerHTML = '<strong>✓ 精準配對！</strong> ' + debriefPersonaAnswers[personaIdx].explanation;
+            } else {
+                btn.style.background = 'rgba(255,0,122,0.2)'; btn.style.borderColor = '#FF007A'; btn.style.color = '#FF007A';
+                feedback.className = 'text-[11px] p-2.5 rounded-lg font-medium'; feedback.style.background = 'rgba(255,0,122,0.1)'; feedback.style.borderColor = '#FF007A'; feedback.style.color = '#FF007A'; feedback.style.border = '1px solid #FF007A';
+                feedback.innerHTML = '<strong>× 非首要優先。</strong> 這人最迫切需求是：<em>' + debriefPersonaAnswers[personaIdx].name + '</em>。' + debriefPersonaAnswers[personaIdx].explanation;
+            }
+            feedback.classList.remove('hidden');
+            var count = Object.keys(debriefState.personaMatches).length;
+            document.getElementById('debrief-match-count').textContent = count;
+            if (count === 3) {
+                var nextBtn = document.getElementById('debrief-step3-btn');
+                nextBtn.disabled = false; nextBtn.style.background = 'linear-gradient(to right,#00FF9D,#00F0FF)'; nextBtn.style.color = '#000'; nextBtn.style.cursor = 'pointer';
+            }
+        }
+
+        function debriefCalculateScore() {
+            var score = debriefState.q2Score * 0.4;
+            score += debriefState.trapsFound.size * 10;
+            var correct = Object.values(debriefState.personaMatches).filter(Boolean).length;
+            score += correct * 10;
+            var pct = Math.min(Math.max(Math.round(score), 45), 98);
+            document.getElementById('debrief-final-score').textContent = pct + '%';
+            var rating = document.getElementById('debrief-final-rating');
+            if (pct >= 80) { rating.innerHTML = '<span>鈦金屬裝甲 🛡️</span>'; rating.style.color = '#00FF9D'; }
+            else if (pct >= 60) { rating.innerHTML = '<span>半熟防彈衣 ⚡</span>'; rating.style.color = '#FFE600'; }
+            else { rating.innerHTML = '<span>紙紮防護罩 ⚠️</span>'; rating.style.color = '#FF007A'; }
+        }
+
+        function debriefReset() {
+            debriefState = { currentStep: 1, q1Answer: null, q2Score: 0, trapsFound: new Set(), personaMatches: {} };
+            document.querySelectorAll('.dq1-btn').forEach(function(b) { b.style.borderColor = '#23283B'; b.style.background = 'rgba(10,11,16,0.5)'; });
+            document.querySelectorAll('.dq2-btn').forEach(function(b) { b.style.borderColor = '#23283B'; b.style.background = 'rgba(10,11,16,0.5)'; });
+            document.getElementById('debrief-rating-box').classList.add('hidden');
+            var s1b = document.getElementById('debrief-step1-btn');
+            s1b.disabled = true; s1b.style.background = '#1F2937'; s1b.style.color = '#6B7280'; s1b.style.cursor = 'not-allowed';
+            [1,2,3].forEach(function(id) {
+                var e = document.getElementById('debrief-hotspot-' + id);
+                e.style.borderColor = 'rgba(255,0,122,0.4)'; e.style.background = 'rgba(10,11,16,0.8)';
+                document.getElementById('debrief-spot-' + id + '-icon').textContent = '🔍';
+            });
+            document.getElementById('debrief-hotspot-modal').classList.add('hidden');
+            document.getElementById('debrief-traps-count').textContent = '0';
+            var s2b = document.getElementById('debrief-step2-btn');
+            s2b.disabled = true; s2b.style.background = '#1F2937'; s2b.style.color = '#6B7280'; s2b.style.cursor = 'not-allowed';
+            [0,1,2].forEach(function(p) {
+                var c = document.getElementById('debrief-persona-' + p);
+                c.querySelectorAll('button').forEach(function(b) { b.disabled = false; b.style.opacity = '1'; b.style.cursor = 'pointer'; b.style.borderColor = '#23283B'; b.style.background = 'rgba(10,11,16,0.6)'; });
+                document.getElementById('debrief-feedback-' + p).classList.add('hidden');
+            });
+            document.getElementById('debrief-match-count').textContent = '0';
+            var s3b = document.getElementById('debrief-step3-btn');
+            s3b.disabled = true; s3b.style.background = '#1F2937'; s3b.style.color = '#6B7280'; s3b.style.cursor = 'not-allowed';
+            document.getElementById('debrief-card-title').textContent = "GUEST'S DEBRIEF PASS";
+            document.getElementById('debrief-final-score').textContent = '88%';
+            document.getElementById('debrief-final-rating').innerHTML = '<span>鈦金屬裝甲 🛡️</span>';
+            debriefGoToStep(1);
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        }
+
+        function debriefLeave() {
+            document.getElementById('debriefingScreen').classList.add('hidden');
+            debriefReset();
+            var ctrl = document.getElementById('hostGameControlPanel');
+            ctrl.classList.add('hidden');
+            document.getElementById('hostPhaseLabel').innerText = '🏁 全場遊戲已結束！最終成績已公佈';
+            document.getElementById('hostPhaseCountdown').innerText = '✓';
+            var skipBtn = document.getElementById('hostSkipBtn');
+            skipBtn.classList.add('hidden'); skipBtn.onclick = hostSkipPhase;
+            if (isFirebaseActive && localRole === 'host') {
+                db.ref('rooms/' + roomPin + '/gameState').update({ phase: 'gameover' });
+            }
+            document.getElementById('gameOverScreen').classList.remove('hidden');
+            document.getElementById('gameplayScreen').classList.remove('hidden');
+        }
+
         window.selectAppMode = selectAppMode;
         window.joinOrStartGame = joinOrStartGame;
         window.hostStartGame = hostStartGame;
@@ -2185,6 +2631,14 @@
         window.confirmStageA = confirmStageA;
         window.confirmStageB = confirmStageB;
         window.toggleMute = toggleMute;
+        window.debriefEnter = debriefEnter;
+        window.debriefGoToStep = debriefGoToStep;
+        window.debriefSelectQ1 = debriefSelectQ1;
+        window.debriefSelectQ2 = debriefSelectQ2;
+        window.debriefTriggerHotspot = debriefTriggerHotspot;
+        window.debriefMakeMatch = debriefMakeMatch;
+        window.debriefReset = debriefReset;
+        window.debriefLeave = debriefLeave;
 
         window.onload = function() {
             initAudio();
