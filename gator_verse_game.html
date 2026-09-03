@@ -168,7 +168,7 @@
 
         <!-- ================== LEFT: PROJECTOR MAIN STAGE (HOST VIEW) ================== -->
         <section id="hostViewContainer" class="lg:col-span-5 bg-white border-3 border-[#0F172A] rounded-[24px] p-5 flex flex-col justify-between shadow-[6px_6px_0px_0px_#0F172A] transition-all duration-500">
-            <div>
+            <div id="hostViewInnerContent">
                 <!-- Stage Header -->
                 <div class="flex justify-between items-center border-b-2 border-slate-100 pb-3 mb-4">
                     <div class="flex items-center gap-2">
@@ -248,6 +248,15 @@
                         </button>
                     </div>
                 </div>
+            </div>
+            <!-- Host Debriefing Display (visible during debriefing, outside inner content) -->
+            <div id="hostDebriefPanel" class="hidden rounded-2xl border-2 border-[#0F172A] overflow-hidden shadow-inner" style="background:#0A0B10;color:#F3F4F6">
+                <div class="flex items-center justify-between py-2 px-3 border-b" style="border-color:rgba(255,255,255,0.08);background:rgba(18,21,32,0.8)">
+                    <div class="flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div><span class="font-mono text-[10px] tracking-wider uppercase" style="color:#8A94B2">賽後檢討 • Debriefing</span></div>
+                    <div class="px-2 py-0.5 rounded-full text-[10px] font-mono" style="background:#121520;border:1px solid #23283B;color:#00F0FF">階段 <span id="host-debrief-step-num">1</span>/4</div>
+                </div>
+                <div class="w-full h-1 overflow-hidden flex" style="background:#121520"><div id="host-debrief-progress" class="h-full rounded-full transition-all duration-500" style="width:25%;background:linear-gradient(to right,#00F0FF,#00FF9D,#FF007A)"></div></div>
+                <div id="hostDebriefContent" class="p-3 space-y-3 text-xs overflow-y-auto max-h-[400px]"></div>
             </div>
 
             <!-- Fate Wheel Graphic Panel -->
@@ -730,7 +739,7 @@
                 </div>
 
                 <!-- Post-Game Actions (visible after game ends) -->
-                <div id="gameOverActions" class="mt-6 space-y-3">
+                <div id="gameOverActions" class="hidden mt-6 space-y-3">
                     <button onclick="debriefEnter()" class="w-full neo-btn bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-black py-4 px-6 rounded-xl text-sm uppercase tracking-wider">
                         <i class="fa-solid fa-chalkboard-user mr-2"></i> 進入 Debriefing 賽後檢討
                     </button>
@@ -1274,7 +1283,7 @@
             if (!state || !state.phase) return;
             const phase = state.phase;
             const round = state.currentRound || 1;
-            const key = phase + '#' + round;
+            const key = phase + '#' + round + '#' + (state.debriefStep || 0);
             if (key === lastPhaseKey) return; // dedupe repeated Firebase fires
             lastPhaseKey = key;
             currentPhase = phase;
@@ -1298,12 +1307,26 @@
                 document.getElementById('gameOverScreen').classList.add('hidden');
                 document.getElementById('setupScreen').classList.add('hidden');
                 document.getElementById('debriefingScreen').classList.remove('hidden');
+                // Host view: show debrief panel, hide normal content
+                var hostViewInner = document.getElementById('hostViewInnerContent');
+                if (hostViewInner) hostViewInner.classList.add('hidden');
+                var hdp = document.getElementById('hostDebriefPanel');
+                if (hdp) hdp.classList.remove('hidden');
+                var hostPostGame = document.getElementById('hostPostGamePanel');
+                if (hostPostGame) hostPostGame.classList.add('hidden');
                 var step = state.debriefStep || 1;
                 debriefShowStep(step);
-                if (localRole === 'host' || localRole === 'demo') {
-                    document.getElementById('hostDebriefLabel').innerText = 'Debriefing 階段 ' + step + '/4';
-                    document.getElementById('hostDebriefCountdown').innerText = '✓';
+                var ctrl = document.getElementById('hostGameControlPanel');
+                if (ctrl) {
+                    ctrl.classList.remove('hidden');
+                    document.getElementById('hostPhaseLabel').innerText = 'Debriefing 階段 ' + step + '/4';
+                    document.getElementById('hostPhaseCountdown').innerText = '✓';
+                    var skipBtn = document.getElementById('hostSkipBtn');
+                    skipBtn.classList.remove('hidden'); skipBtn.disabled = false;
+                    skipBtn.innerHTML = '<i class="fa-solid fa-forward mr-1"></i> 進入下一 Debriefing 階段';
+                    skipBtn.onclick = function() { debriefGoToStep(debriefState.currentStep + 1); };
                 }
+                document.getElementById('activeStageIndicator').innerText = 'Stage: DEBRIEFING';
                 return;
             }
 
@@ -1334,6 +1357,7 @@
                 activeEvent = state.activeEvent;
                 resolveStageC();
             } else if (phase === 'gameover') {
+                document.getElementById('gameOverActions').classList.remove('hidden');
                 triggerEndGame(true, 'survived');
             }
         }
@@ -2283,6 +2307,10 @@
             stopPhaseTimer();
             document.getElementById('gameplayScreen').classList.add('hidden');
             document.getElementById('gameOverScreen').classList.remove('hidden');
+            // Show debriefing button for demo/host when game truly ends (all rounds complete)
+            if (localRole === 'demo' || localRole === 'host') {
+                document.getElementById('gameOverActions').classList.remove('hidden');
+            }
             document.getElementById('recapPlayerName').innerText = playerState.name;
 
             const finalScore = playerState.score;
@@ -2422,6 +2450,10 @@
             document.getElementById('setupScreen').classList.add('hidden');
             document.getElementById('debriefingScreen').classList.remove('hidden');
             document.getElementById('hostPostGamePanel').classList.add('hidden');
+            var hostViewInner = document.getElementById('hostViewInnerContent');
+            if (hostViewInner) hostViewInner.classList.add('hidden');
+            var hdp = document.getElementById('hostDebriefPanel');
+            if (hdp) hdp.classList.remove('hidden');
             if (isFirebaseActive && localRole === 'host') {
                 db.ref('rooms/' + roomPin + '/gameState').update({ phase: 'debriefing', debriefStep: 1 });
             } else if (isFirebaseActive && localRole === 'player') {
@@ -2451,6 +2483,42 @@
             if (numEl) numEl.textContent = step;
             var progEl = document.getElementById('debrief-progress');
             if (progEl) progEl.style.width = (step * 25) + '%';
+            // Update host debrief panel
+            var hStepNum = document.getElementById('host-debrief-step-num');
+            if (hStepNum) hStepNum.textContent = step;
+            var hProg = document.getElementById('host-debrief-progress');
+            if (hProg) hProg.style.width = (step * 25) + '%';
+            var hContent = document.getElementById('hostDebriefContent');
+            if (hContent) hContent.innerHTML = hostDebriefContent(step);
+        }
+
+        function hostDebriefContent(step) {
+            if (step === 1) return '<div class="text-center space-y-1 mb-2"><div class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-mono" style="background:rgba(0,240,255,0.1);border:1px solid rgba(138,148,178,0.3);color:#8A94B2">階段 1：現實檢驗</div><h3 class="text-sm font-bold">遊戲開局輸咗可以 Re-open，現實世界爆煲點算？ 🎲</h3></div>'
+                + '<div class="rounded-xl p-3 space-y-2" style="background:rgba(18,21,32,0.6);border:1px solid #23283B">'
+                + '<p class="text-[10px] font-semibold" style="color:#E5E7EB">1. 撞正意外/疾病時你在想甚麼？</p>'
+                + '<div class="grid grid-cols-2 gap-2"><div class="p-2 rounded-lg text-[10px]" style="background:#121520;border:1px solid #23283B"><span>🎲</span> 純粹命仔唔好</div><div class="p-2 rounded-lg text-[10px]" style="background:#121520;border:1px solid #23283B"><span>🧠</span> 現實寫照！零防護裸奔</div></div>'
+                + '<p class="text-[10px] font-semibold mt-2" style="color:#E5E7EB">2. 突然收到 HK$100,000 醫院帳單，流動資金狀態？</p>'
+                + '<div class="space-y-1"><div class="p-1.5 rounded text-[10px] flex justify-between" style="background:#121520;border:1px solid #23283B"><span>💸 &lt; 1 個月</span><span style="color:#FF007A">即時 Game Over</span></div><div class="p-1.5 rounded text-[10px] flex justify-between" style="background:#121520;border:1px solid #23283B"><span>⚡ 3 個月備用金</span><span style="color:#FFE600">血量扣 80%</span></div><div class="p-1.5 rounded text-[10px] flex justify-between" style="background:#121520;border:1px solid #23283B"><span>🛡️ 6 個月以上儲蓄</span><span style="color:#00FF9D">擋得住一次</span></div></div></div>';
+            if (step === 2) return '<div class="text-center space-y-1 mb-2"><div class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-mono" style="background:rgba(255,230,0,0.1);border:1px solid rgba(255,230,0,0.3);color:#8A94B2">階段 2：魔鬼細節大偵探</div><h3 class="text-sm font-bold">網上比價好便宜？小心買咗「裝飾用保單」！</h3></div>'
+                + '<div class="space-y-2"><div class="rounded-xl p-3 relative overflow-hidden" style="border:1px solid rgba(255,0,122,0.4);background:#121520">'
+                + '<div class="absolute top-0 right-0 text-black font-mono text-[8px] font-bold px-2 py-0.5 rounded-bl-lg" style="background:#FF007A">超抵平保單？</div>'
+                + '<div class="flex justify-between items-start mb-2"><div><h4 class="font-bold text-xs text-white">Plan A：「至抵玩新手醫療保」</h4><span class="text-[9px]" style="color:#8A94B2">目標對象：剛畢業大專生</span></div><div class="text-right"><span class="text-sm font-mono font-bold" style="color:#00FF9D">HK$180</span><span class="text-[8px] block" style="color:#8A94B2">/ 每月</span></div></div>'
+                + '<div class="space-y-1 text-[9px]"><div class="p-1.5 rounded flex justify-between" style="background:#0A0B10;border:1px solid rgba(255,0,122,0.3)"><span style="color:#9CA3AF">每年自負額</span><span style="color:#FF007A">HK$50,000 需自付</span></div><div class="p-1.5 rounded flex justify-between" style="background:#0A0B10;border:1px solid rgba(255,0,122,0.3)"><span style="color:#9CA3AF">專科及手術費</span><span style="color:#FF007A">50% 共同保險</span></div><div class="p-1.5 rounded flex justify-between" style="background:#0A0B10;border:1px solid rgba(255,0,122,0.3)"><span style="color:#9CA3AF">等候期</span><span style="color:#FF007A">180 天超長</span></div></div></div>'
+                + '<div class="rounded-xl p-3 opacity-75" style="border:1px solid #23283B;background:#121520"><div class="flex justify-between items-start"><div><h4 class="font-bold text-xs" style="color:#E5E7EB">Plan B：標準 VHIS</h4><span class="text-[9px]" style="color:#8A94B2">政府認可標準計劃</span></div><div class="text-right"><span class="text-xs font-mono font-bold text-white">HK$420</span><span class="text-[8px] block" style="color:#8A94B2">/ 每月</span></div></div>'
+                + '<div class="grid grid-cols-3 gap-1 text-[8px] font-mono text-center pt-1" style="color:#D1D5DB;border-top:1px solid rgba(35,40,59,0.4)"><div class="p-1 rounded" style="background:#0A0B10">自負額：$0</div><div class="p-1 rounded" style="background:#0A0B10">賠償率：全數</div><div class="p-1 rounded" style="background:#0A0B10">可扣稅</div></div></div></div>';
+            if (step === 3) return '<div class="text-center space-y-1 mb-2"><div class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-mono" style="background:rgba(0,255,157,0.1);border:1px solid rgba(0,255,157,0.3);color:#8A94B2">階段 3：人生階段精準配對</div><h3 class="text-sm font-bold">不做被推銷的「肥羊」！ 🎯</h3></div>'
+                + '<div class="space-y-2">'
+                + '<div class="rounded-xl p-2 space-y-1" style="border:1px solid #23283B;background:#121520"><div class="flex items-center gap-2"><div class="w-6 h-6 rounded-full flex items-center justify-center text-xs" style="background:linear-gradient(to top right,#A855F7,#EC4899)">🎨</div><div><h4 class="font-bold text-[10px] text-white">Alex, 21歲 Slashie</h4><p class="text-[8px]" style="color:#8A94B2">零公司醫療，收入浮動</p></div></div><div class="grid grid-cols-3 gap-1"><div class="p-1 rounded text-[8px] text-center" style="border:1px solid #23283B;background:#0A0B10">VHIS 自願醫保</div><div class="p-1 rounded text-[8px] text-center" style="border:1px solid #23283B;background:#0A0B10">人壽保險</div><div class="p-1 rounded text-[8px] text-center" style="border:1px solid #23283B;background:#0A0B10">退休延期年金</div></div></div>'
+                + '<div class="rounded-xl p-2 space-y-1" style="border:1px solid #23283B;background:#121520"><div class="flex items-center gap-2"><div class="w-6 h-6 rounded-full flex items-center justify-center text-xs" style="background:linear-gradient(to top right,#06B6D4,#3B82F6)">💼</div><div><h4 class="font-bold text-[10px] text-white">Chloe, 25歲 大公司新鮮人</h4><p class="text-[8px]" style="color:#8A94B2">已有基本醫保，危疾为零</p></div></div><div class="grid grid-cols-3 gap-1"><div class="p-1 rounded text-[8px] text-center" style="border:1px solid #23283B;background:#0A0B10">危疾保險</div><div class="p-1 rounded text-[8px] text-center" style="border:1px solid #23283B;background:#0A0B10">全年旅遊保</div><div class="p-1 rounded text-[8px] text-center" style="border:1px solid #23283B;background:#0A0B10">終身儲蓄壽險</div></div></div>'
+                + '<div class="rounded-xl p-2 space-y-1" style="border:1px solid #23283B;background:#121520"><div class="flex items-center gap-2"><div class="w-6 h-6 rounded-full flex items-center justify-center text-xs" style="background:linear-gradient(to top right,#EAB308,#F97316)">🏠</div><div><h4 class="font-bold text-[10px] text-white">Marcus, 30歲 新手業主</h4><p class="text-[8px]" style="color:#8A94B2">$600萬按揭 + 初生BB</p></div></div><div class="grid grid-cols-3 gap-1"><div class="p-1 rounded text-[8px] text-center" style="border:1px solid #23283B;background:#0A0B10">純定期人壽</div><div class="p-1 rounded text-[8px] text-center" style="border:1px solid #23283B;background:#0A0B10">意外醫療門診</div><div class="p-1 rounded text-[8px] text-center" style="border:1px solid #23283B;background:#0A0B10">寵物保險</div></div></div></div>';
+            if (step === 4) return '<div class="text-center space-y-1 mb-2"><div class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-mono" style="background:rgba(0,240,255,0.1);border:1px solid rgba(0,240,255,0.3);color:#8A94B2">工作坊賽後總結</div><h3 class="text-sm font-bold">你的個人風險免疫力 Pass 🚀</h3></div>'
+                + '<div class="rounded-xl p-3 space-y-3" style="border:2px solid #00F0FF;background:linear-gradient(to bottom,#121520,#0A0B10)">'
+                + '<div class="flex items-center justify-between p-2 rounded-lg" style="background:rgba(10,11,16,0.9);border:1px solid #23283B"><div><span class="text-[8px] uppercase font-mono" style="color:#8A94B2">財務免疫力評級</span><div class="font-bold text-sm flex items-center gap-1" style="color:#00FF9D" id="host-debrief-final-rating">鈦金屬裝甲 🛡️</div></div><div class="text-right font-mono text-xl font-bold" style="color:#00F0FF" id="host-debrief-final-score">88%</div></div>'
+                + '<div class="space-y-1"><span class="text-[9px] font-bold uppercase tracking-wider block" style="color:#D1D5DB">Gen-Z 避坑 3 大黃金法則：</span>'
+                + '<div class="p-2 rounded flex items-start gap-2 text-[10px]" style="background:rgba(18,21,32,0.8);border:1px solid #23283B"><span class="font-mono font-bold" style="color:#FF007A">01</span><div><strong class="text-white block">先睇細節，後看保費</strong><span style="color:#8A94B2">審視自負額及共同保險比例</span></div></div>'
+                + '<div class="p-2 rounded flex items-start gap-2 text-[10px]" style="background:rgba(18,21,32,0.8);border:1px solid #23283B"><span class="font-mono font-bold" style="color:#00F0FF">02</span><div><strong class="text-white block">先保障，後投資</strong><span style="color:#8A94B2">優先做好 VHIS 與危疾保障</span></div></div>'
+                + '<div class="p-2 rounded flex items-start gap-2 text-[10px]" style="background:rgba(18,21,32,0.8);border:1px solid #23283B"><span class="font-mono font-bold" style="color:#00FF9D">03</span><div><strong class="text-white block">隨人生階段 Update</strong><span style="color:#8A94B2">轉工、買樓或成立家庭時檢視保單</span></div></div></div></div>';
+            return '';
         }
 
         function debriefGoToStep(step) {
@@ -2573,6 +2641,11 @@
             if (pct >= 80) { rating.innerHTML = '<span>鈦金屬裝甲 🛡️</span>'; rating.style.color = '#00FF9D'; }
             else if (pct >= 60) { rating.innerHTML = '<span>半熟防彈衣 ⚡</span>'; rating.style.color = '#FFE600'; }
             else { rating.innerHTML = '<span>紙紮防護罩 ⚠️</span>'; rating.style.color = '#FF007A'; }
+            // Sync to host debrief panel
+            var hScore = document.getElementById('host-debrief-final-score');
+            var hRating = document.getElementById('host-debrief-final-rating');
+            if (hScore) hScore.textContent = pct + '%';
+            if (hRating) { hRating.innerHTML = rating.innerHTML; hRating.style.color = rating.style.color; }
         }
 
         function debriefReset() {
@@ -2608,6 +2681,10 @@
 
         function debriefLeave() {
             document.getElementById('debriefingScreen').classList.add('hidden');
+            var hostViewInner = document.getElementById('hostViewInnerContent');
+            if (hostViewInner) hostViewInner.classList.remove('hidden');
+            var hdp = document.getElementById('hostDebriefPanel');
+            if (hdp) hdp.classList.add('hidden');
             debriefReset();
             var ctrl = document.getElementById('hostGameControlPanel');
             ctrl.classList.add('hidden');
@@ -2615,6 +2692,8 @@
             document.getElementById('hostPhaseCountdown').innerText = '✓';
             var skipBtn = document.getElementById('hostSkipBtn');
             skipBtn.classList.add('hidden'); skipBtn.onclick = hostSkipPhase;
+            var postGame = document.getElementById('hostPostGamePanel');
+            if (postGame) postGame.classList.remove('hidden');
             if (isFirebaseActive && localRole === 'host') {
                 db.ref('rooms/' + roomPin + '/gameState').update({ phase: 'gameover' });
             }
