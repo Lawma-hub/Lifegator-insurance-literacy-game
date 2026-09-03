@@ -785,8 +785,8 @@
                             </div>
                             <p id="debrief-defense-desc" class="text-xs" style="color:#D1D5DB">現實世界無 Re-open 鍵，一張私家醫院帳單就可以令你幾年積蓄一次過清零。</p>
                         </div>
-                        <button id="debrief-step1-btn" disabled onclick="debriefGoToStep(2)" class="w-full py-4 rounded-xl font-bold text-sm tracking-wide uppercase transition-all flex items-center justify-center gap-2 cursor-not-allowed" style="background:#1F2937;color:#6B7280">
-                            <span>鎖定結果 • 進入下一步</span> <span>→</span>
+                        <button id="debrief-step1-btn" disabled onclick="if(localRole==='host'||localRole==='demo')debriefGoToStep(2)" class="w-full py-4 rounded-xl font-bold text-sm tracking-wide uppercase transition-all flex items-center justify-center gap-2 cursor-not-allowed" style="background:#1F2937;color:#6B7280">
+                            <span>鎖定結果 • 等待主持人進入下一步</span> <span>→</span>
                         </button>
                     </section>
                     <!-- STEP 2: Fine Print Challenge -->
@@ -834,8 +834,8 @@
                             <div class="flex items-center gap-2 font-bold text-xs" style="color:#FFE600"><span>⚠️</span><span id="debrief-modal-title">破解魔鬼細節！</span></div>
                             <p id="debrief-modal-body" class="text-xs" style="color:#E5E7EB">頭 5 萬塊醫院帳單要你自己掏腰包！</p>
                         </div>
-                        <button id="debrief-step2-btn" disabled onclick="debriefGoToStep(3)" class="w-full py-4 rounded-xl font-bold text-sm tracking-wide uppercase transition-all flex items-center justify-center gap-2 cursor-not-allowed" style="background:#1F2937;color:#6B7280">
-                            <span>已拆解陷阱 (<span id="debrief-traps-count">0</span>/3)</span> <span>→</span>
+                        <button id="debrief-step2-btn" disabled onclick="if(localRole==='host'||localRole==='demo')debriefGoToStep(3)" class="w-full py-4 rounded-xl font-bold text-sm tracking-wide uppercase transition-all flex items-center justify-center gap-2 cursor-not-allowed" style="background:#1F2937;color:#6B7280">
+                            <span>已拆解陷阱 (<span id="debrief-traps-count">0</span>/3) • 等待主持人</span> <span>→</span>
                         </button>
                     </section>
                     <!-- STEP 3: Life Stage Matchmaker -->
@@ -883,8 +883,8 @@
                                 <div id="debrief-feedback-2" class="hidden text-[11px] p-2 rounded-lg" style="background:#0A0B10;border:1px solid #23283B"></div>
                             </div>
                         </div>
-                        <button id="debrief-step3-btn" disabled onclick="debriefGoToStep(4)" class="w-full py-4 rounded-xl font-bold text-sm tracking-wide uppercase transition-all flex items-center justify-center gap-2 cursor-not-allowed" style="background:#1F2937;color:#6B7280">
-                            <span>解鎖工具包 (<span id="debrief-match-count">0</span>/3)</span> <span>→</span>
+                        <button id="debrief-step3-btn" disabled onclick="if(localRole==='host'||localRole==='demo')debriefGoToStep(4)" class="w-full py-4 rounded-xl font-bold text-sm tracking-wide uppercase transition-all flex items-center justify-center gap-2 cursor-not-allowed" style="background:#1F2937;color:#6B7280">
+                            <span>解鎖工具包 (<span id="debrief-match-count">0</span>/3) • 等待主持人</span> <span>→</span>
                         </button>
                     </section>
                     <!-- STEP 4: Risk Toolkit & Result Card -->
@@ -2424,15 +2424,20 @@
             document.getElementById('hostPostGamePanel').classList.add('hidden');
             if (isFirebaseActive && localRole === 'host') {
                 db.ref('rooms/' + roomPin + '/gameState').update({ phase: 'debriefing', debriefStep: 1 });
+            } else if (isFirebaseActive && localRole === 'player') {
+                // Player requests to enter debriefing - broadcast to host
+                db.ref('rooms/' + roomPin + '/gameState').update({ phase: 'debriefing', debriefStep: 1, playerReady: true });
             }
             var ctrl = document.getElementById('hostGameControlPanel');
-            ctrl.classList.remove('hidden');
-            document.getElementById('hostPhaseLabel').innerText = 'Debriefing 階段 1/4';
-            document.getElementById('hostPhaseCountdown').innerText = '✓';
-            var skipBtn = document.getElementById('hostSkipBtn');
-            skipBtn.classList.remove('hidden'); skipBtn.disabled = false;
-            skipBtn.innerHTML = '<i class="fa-solid fa-forward mr-1"></i> 進入下一 Debriefing 階段';
-            skipBtn.onclick = function() { debriefGoToStep(debriefState.currentStep + 1); };
+            if (ctrl) {
+                ctrl.classList.remove('hidden');
+                document.getElementById('hostPhaseLabel').innerText = 'Debriefing 階段 1/4';
+                document.getElementById('hostPhaseCountdown').innerText = '✓';
+                var skipBtn = document.getElementById('hostSkipBtn');
+                skipBtn.classList.remove('hidden'); skipBtn.disabled = false;
+                skipBtn.innerHTML = '<i class="fa-solid fa-forward mr-1"></i> 進入下一 Debriefing 階段';
+                skipBtn.onclick = function() { debriefGoToStep(debriefState.currentStep + 1); };
+            }
             document.getElementById('activeStageIndicator').innerText = 'Stage: DEBRIEFING';
             debriefShowStep(1);
         }
