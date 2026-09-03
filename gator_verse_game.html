@@ -1773,7 +1773,7 @@
 
             renderDashboard();
             updateAggregatedRealtimeStatsPanel();
-            startPhaseTimer(20, handleStageATimeout, "phaseTimerBar", "decisionTimerText");
+            startPhaseTimer(40, handleStageATimeout, "phaseTimerBar", "decisionTimerText");
 
             if (localRole === 'demo') {
                 document.getElementById('adminSkipDecisionBtn').classList.remove('hidden');
@@ -1916,7 +1916,7 @@
             updateCardStyle('accident', false);
             updateCardStyle('ci', false);
 
-            startPhaseTimer(20, handleStageBTimeout, "phaseTimerBar", "shopTimerText");
+            startPhaseTimer(40, handleStageBTimeout, "phaseTimerBar", "shopTimerText");
             if (localRole === 'demo') document.getElementById('adminSkipShopBtn').classList.remove('hidden');
         }
 
