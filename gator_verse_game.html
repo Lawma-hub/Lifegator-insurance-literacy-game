@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gator-VERSE: 青春大學生健康求生戰 v6.0</title>
+    <title>Gator-VERSE: 財理命脈求生戰</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Font Inter & Custom Chinese Font -->
@@ -100,15 +100,15 @@
                 <h1 class="text-4xl font-black text-[#0F172A] tracking-tight">
                     Gator-VERSE 實時大對抗 🥦
                 </h1>
-                <p class="text-slate-600 text-sm mt-3 font-bold tracking-wide">青春大學生健康求生戰 • 免登入實時互動系統 v6.0</p>
+                <p class="text-slate-600 text-sm mt-3 font-bold tracking-wide">財理命脈求生戰 • 實時互動系統</p>
             </div>
             
             <div class="bg-[#FFFDE7] border-3 border-[#0F172A] p-6 rounded-2xl text-left text-xs text-slate-800 space-y-3 leading-relaxed shadow-[4px_4px_0px_0px_#0F172A]">
                 <p class="font-black text-[#E65100] text-sm flex items-center gap-1.5">
                     <i class="fa-solid fa-lightbulb text-lg"></i> 💡 運作說明與指南 (Quick Start)：
                 </p>
-                <p>1. <b>大螢幕投影模式 (Host) 📺：</b> 適合投影在 Workshop 大螢幕。一鍵生成 4 位數 PIN，即時演算全場真人的決策％、保單覆蓋度與死傷破產大數據！</p>
-                <p>2. <b>學生手機端 (Player) 📱：</b> 學生手機直接掃大螢幕本地 QR Code，輸入房號 PIN 與暱稱，<b>無須註冊直接開戰！</b></p>
+                <p>1. <b>大螢幕投影模式 (Host) 📺：</b> 即時演算全場真人的決策％、保單覆蓋度與死傷破產大數據！</p>
+                <p>2. <b>學生手機端 (Player) 📱：</b> 掃描QR Code，輸入虛擬人生暱稱</p>
                 <p>3. <b>單機模擬測試 (Demo) 🎮：</b> 測試首選！自動加載 20 個高智能 AI 大學生與你同屏跨端對戰，功能 100% 完整呈現！</p>
             </div>
 
@@ -117,7 +117,7 @@
                     <i class="fa-solid fa-desktop text-2xl text-slate-700 group-hover:text-emerald-600 transition"></i>
                     <div>
                         <span class="block font-black text-sm text-slate-800">大螢幕投影主機</span>
-                        <span class="text-[10px] text-slate-500 font-bold">適合課堂放映投影</span>
+                        <span class="text-[10px] text-slate-500 font-bold">課堂放映投影</span>
                     </div>
                 </button>
                 <button onclick="selectAppMode('player')" class="bg-white border-3 border-[#0F172A] hover:bg-cyan-50 p-6 rounded-2xl flex flex-col items-center justify-center gap-3 transition shadow-[4px_4px_0px_0px_#0F172A] hover:translate-y-[-2px] group">
@@ -202,7 +202,7 @@
                 <!-- Leaderboard -->
                 <div id="hostLeaderboardPanel" class="bg-[#F4F4F0] border-2 border-[#0F172A] rounded-2xl p-4 mb-4 hidden">
                     <h3 class="text-xs font-black text-slate-500 uppercase tracking-widest mb-3 flex justify-between">
-                        <span>🏆 全場 Wellness 實時排行榜</span>
+                        <span>🏆 全場 Wellness 積分實時排行榜</span>
                         <span class="text-emerald-700">Top 4</span>
                     </h3>
                     <div id="leaderboardList" class="space-y-2.5"></div>
@@ -274,7 +274,7 @@
                 <div class="absolute top-9 z-20 text-emerald-600 text-lg transform rotate-180">
                     <i class="fa-solid fa-caret-up"></i>
                 </div>
-                <div id="wheelStatusText" class="mt-2 text-xs font-black tracking-widest text-slate-500">命運之輪就緒</div>
+                <div id="wheelStatusText" class="mt-2 text-xs font-black tracking-widest text-slate-500">命運之輪盤就緒</div>
             </div>
 
             <!-- Real-time Aggregate Choice Statistics Panel -->
@@ -307,7 +307,7 @@
                     <div id="setupLogoIcon" class="inline-block bg-[#E8F5E9] text-[#2E7D32] border-3 border-[#0F172A] p-5 rounded-[24px] mb-6 shadow-[4px_4px_0px_0px_#0F172A]">
                         <i class="fa-solid fa-graduation-cap text-5xl animate-bounce"></i>
                     </div>
-                    <h2 id="setupScreenTitle" class="text-2xl font-black text-slate-850 mb-2">加入 Gator-VERSE 求生戰 🥦</h2>
+                    <h2 id="setupScreenTitle" class="text-2xl font-black text-slate-850 mb-2">加入 Gator-VERSE 財理命脈求生戰 🥦</h2>
                     <p id="setupScreenDesc" class="text-slate-500 text-sm mb-8 leading-relaxed font-medium">
                         畢業後 10 年即將迎來無數加班、生活衝擊和意外。請輸入大螢幕上的房號與你的暱稱，開始你的保險素養修煉。
                     </p>
@@ -321,7 +321,7 @@
                         </div>
 
                         <div class="bg-[#FDFBF7] p-4 rounded-2xl border-2 border-[#0F172A] shadow-[2px_2px_0px_0px_#0F172A]">
-                            <label class="block text-xs font-black uppercase tracking-widest text-slate-400 mb-2">輸入你的學生暱稱</label>
+                            <label class="block text-xs font-black uppercase tracking-widest text-slate-400 mb-2">輸入你的虛擬人生暱稱</label>
                             <input type="text" id="playerNameInput" value="爆肝戰士" maxlength="8"
                                    class="w-full bg-white border-2 border-[#0F172A] rounded-xl px-4 py-3 text-slate-800 text-base font-bold focus:outline-none focus:ring-2 focus:ring-emerald-150 transition shadow-inner">
                         </div>
@@ -385,7 +385,7 @@
                     <div>
                         <div class="mb-4 flex justify-between items-center">
                             <span class="text-xs bg-[#E8F5E9] text-[#2E7D32] border-2 border-[#0F172A] py-1 px-3 rounded-full font-black">
-                                階段 A：投資自己 ⏰（限時 20 秒）
+                                階段 A：投資自己 ⏰（限時 40 秒）
                             </span>
                             <span id="roundIndicator" class="text-xs text-slate-500 font-mono font-black">回合：1 / 5</span>
                         </div>
@@ -473,7 +473,7 @@
                     <div>
                         <div class="mb-4">
                             <span class="text-xs bg-violet-50 text-violet-700 border-2 border-[#0F172A] py-1.5 px-3 rounded-full font-black">
-                                階段 B：Lifegator 保險市集 🛡️（限時 20 秒）
+                                階段 B：Lifegator 保險市集 🛡️（限時 40 秒）
                             </span>
                             <div class="flex justify-between items-center mt-3">
                                 <h3 class="text-xl font-black text-slate-850">限時配置防禦保障卡</h3>
@@ -563,7 +563,7 @@
                             配置完成，進入命運考驗 <i class="fa-solid fa-dice-six mr-1"></i>
                         </button>
                         <button id="adminSkipShopBtn" onclick="hostProgressToStageC()" class="hidden w-full py-2 bg-slate-100 text-slate-600 text-xs font-black uppercase rounded-lg border border-slate-200">
-                            (Host 控制) 跳至命運之輪 <i class="fa-solid fa-circle-chevron-right ml-1"></i>
+                            (Host 控制) 跳至命運之輪盤 <i class="fa-solid fa-circle-chevron-right ml-1"></i>
                         </button>
                     </div>
                 </div>
@@ -574,7 +574,7 @@
                         <div class="inline-block bg-[#E8F5E9] text-[#2E7D32] border-3 border-[#0F172A] p-5 rounded-[24px] mb-6 relative shadow-[4px_4px_0px_0px_#0F172A]">
                             <i id="warningLightIcon" class="fa-solid fa-umbrella text-5xl"></i>
                         </div>
-                        <h3 class="text-2xl font-black text-slate-800 mb-2">等待命運之輪引爆 🎯</h3>
+                        <h3 class="text-2xl font-black text-slate-800 mb-2">等待命運之輪盤引爆 🎯</h3>
                         <p class="text-slate-500 text-sm leading-relaxed mb-6 font-bold">
                             這一回合的風險事件即將席捲全場。你的個人數值決定了健康威脅與意外發生機率！
                         </p>
@@ -602,7 +602,7 @@
 
                         <button onclick="spinWheel()" id="spinActionBtn"
                                 class="w-full bg-[#2E7D32] text-white font-black py-4 px-8 rounded-xl text-lg neo-btn">
-                            <i class="fa-solid fa-circle-play mr-2"></i> <span id="spinActionBtnLabel">引爆命運之輪</span>
+                            <i class="fa-solid fa-circle-play mr-2"></i> <span id="spinActionBtnLabel">引爆命運之輪盤</span>
                         </button>
                     </div>
                 </div>
@@ -741,7 +741,7 @@
                 <!-- Post-Game Actions (visible after game ends) -->
                 <div id="gameOverActions" class="hidden mt-6 space-y-3">
                     <button onclick="debriefEnter()" class="w-full neo-btn bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-black py-4 px-6 rounded-xl text-sm uppercase tracking-wider">
-                        <i class="fa-solid fa-chalkboard-user mr-2"></i> 進入 Debriefing 賽後檢討
+                        <i class="fa-solid fa-chalkboard-user mr-2"></i> 進入賽後檢討
                     </button>
                     <button onclick="resetGame()" class="w-full neo-btn bg-slate-200 hover:bg-slate-300 text-slate-700 font-black py-3 px-6 rounded-xl text-sm uppercase tracking-wider">
                         <i class="fa-solid fa-rotate-left mr-2"></i> 從頭再玩一次
