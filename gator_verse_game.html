@@ -226,17 +226,6 @@
                     </button>
                 </div>
 
-                <!-- Host In-Game Master Controller (drives all 5 rounds x 4 stages) -->
-                <div id="hostGameControlPanel" class="mt-4 hidden p-3.5 bg-[#E8F5E9] border-2 border-[#0F172A] rounded-2xl text-left shadow-inner">
-                    <div class="flex justify-between items-center mb-2">
-                        <span class="text-[10px] font-black text-emerald-700 uppercase tracking-widest"><i class="fa-solid fa-satellite-dish mr-1"></i> 全場同步控制中 (Live)</span>
-                        <span id="hostPhaseCountdown" class="text-xs font-black text-emerald-700 font-mono">--</span>
-                    </div>
-                    <p id="hostPhaseLabel" class="text-sm font-black text-slate-800 mb-3">階段 A：投資自己</p>
-                    <button onclick="hostSkipPhase()" id="hostSkipBtn" class="w-full neo-btn bg-[#2E7D32] hover:bg-[#1B5E20] text-white text-xs font-black uppercase py-2.5 px-4 rounded-lg transition shadow-md">
-                        <i class="fa-solid fa-forward mr-1"></i> 立即進入下一階段
-                    </button>
-                </div>
                 <div id="hostPostGamePanel" class="mt-4 hidden p-4 bg-[#FFFDE7] border-2 border-[#0F172A] rounded-2xl text-left shadow-inner">
                     <span class="block text-[10px] font-black text-amber-700 uppercase tracking-widest mb-3"><i class="fa-solid fa-flag-checkered mr-1"></i> 遊戲結束 • 後續選項</span>
                     <div class="space-y-2.5">
@@ -257,6 +246,17 @@
                 </div>
                 <div class="w-full h-1 overflow-hidden flex" style="background:#121520"><div id="host-debrief-progress" class="h-full rounded-full transition-all duration-500" style="width:25%;background:linear-gradient(to right,#00F0FF,#00FF9D,#FF007A)"></div></div>
                 <div id="hostDebriefContent" class="p-3 space-y-3 text-xs overflow-y-auto max-h-[400px]"></div>
+            </div>
+            <!-- Host In-Game Master Controller (moved after debrief panel so skip button is visible during debriefing) -->
+            <div id="hostGameControlPanel" class="mt-4 hidden p-3.5 bg-[#E8F5E9] border-2 border-[#0F172A] rounded-2xl text-left shadow-inner">
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-[10px] font-black text-emerald-700 uppercase tracking-widest"><i class="fa-solid fa-satellite-dish mr-1"></i> 全場同步控制中 (Live)</span>
+                    <span id="hostPhaseCountdown" class="text-xs font-black text-emerald-700 font-mono">--</span>
+                </div>
+                <p id="hostPhaseLabel" class="text-sm font-black text-slate-800 mb-3">階段 A：投資自己</p>
+                <button onclick="hostSkipPhase()" id="hostSkipBtn" class="w-full neo-btn bg-[#2E7D32] hover:bg-[#1B5E20] text-white text-xs font-black uppercase py-2.5 px-4 rounded-lg transition shadow-md">
+                    <i class="fa-solid fa-forward mr-1"></i> 立即進入下一階段
+                </button>
             </div>
 
             <!-- Fate Wheel Graphic Panel -->
@@ -767,7 +767,7 @@
                     <section id="debrief-step-1" class="debrief-step space-y-6">
                         <div class="text-center space-y-2">
                             <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono mb-1" style="background:rgba(0,240,255,0.1);border:1px solid rgba(138,148,178,0.3);color:#8A94B2">階段 1：現實檢驗</div>
-                            <h1 class="text-2xl font-bold tracking-tight text-black">遊戲開局輸咗可以 Re-open，現實世界爆煲點算？ 🎲</h1>
+                            <h1 class="text-2xl font-bold tracking-tight text-white">遊戲開局輸咗可以 Re-open，現實世界爆煲點算？ 🎲</h1>
                             <p class="text-sm" style="color:#8A94B2">剛才玩完桌遊，你係靠實力贏，定係撞正意外張牌被扣到破產？</p>
                         </div>
                         <div class="debrief-glass rounded-2xl p-5 space-y-5">
